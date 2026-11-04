@@ -12,6 +12,7 @@
 </h2>
 
 This repository is the **Obsidian-UI build** of [Inhaler V4](https://github.com/Night5449791/InhalerV4ForRoblox).
+In order to compile this build, ask AI Agent to read AGENTS.md
 The game modules, libraries and profile format are unchanged; the entire click GUI is
 re-implemented on top of [Obsidian](https://github.com/deividcomsono/Obsidian) instead of
 Vape's own widget library.
