@@ -528,11 +528,11 @@ run(function()
 	local Vertical
 	local ClickAim
 	local moveConst = Vector2.new(1, 0.77) * math.rad(0.5)
-	
+
 	local function wrapAngle(num)
 		return (num + math.pi % math.tau) - math.pi
 	end
-	
+
 	AimAssist = vape.Categories.Combat:CreateModule({
 		Name = 'AimAssist',
 		Function = function(callback)
@@ -540,7 +540,7 @@ run(function()
 				AimAssist:Clean(runService.Heartbeat:Connect(function(dt)
 					local lastSwing = entitylib.isAlive and rawget(tribes.State, 'handler')
 					lastSwing = lastSwing and rawget(lastSwing, 'lastSwing') or nil
-	
+
 					if lastSwing and ((not ClickAim.Enabled) or (os.clock() - (lastSwing or 0)) < 0.5) then
 						local entity = entitylib.EntityPosition({
 							Range = Distance.Value,
@@ -549,14 +549,14 @@ run(function()
 							Players = Targets.Players.Enabled,
 							NPCs = Targets.NPCs.Enabled
 						})
-	
+
 						if entity and inputService.MouseBehavior == Enum.MouseBehavior.LockCenter and not (guiService.MenuIsOpen or vape.gui.ScaledGui.ClickGui.Visible) then
 							local delta = (entity.RootPart.Position - entitylib.character.RootPart.Position)
 							local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
 							local angle = math.acos(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit))
 							if angle >= (math.rad(AngleSlider.Value) / 2) then return end
 							targetinfo.Targets[entity] = os.clock() + 1
-	
+
 							local facing = gameCamera.CFrame.LookVector
 							local lerped = gameCamera.CFrame:Lerp(CFrame.lookAt(gameCamera.CFrame.Position, entity.RootPart.Position), (AimSpeed.Value + (StrafeIncrease.Enabled and (inputService:IsKeyDown(Enum.KeyCode.A) or inputService:IsKeyDown(Enum.KeyCode.D)) and 10 or 0)) * dt).LookVector
 							local diffYaw = wrapAngle(math.atan2(facing.X, facing.Z) - math.atan2(lerped.X, lerped.Z))
@@ -612,7 +612,7 @@ run(function()
 	local Value
 	local Arc
 	local old
-	
+
 	Reach = vape.Categories.Combat:CreateModule({
 		Name = 'Reach',
 		Function = function(callback)
@@ -663,7 +663,7 @@ run(function()
 	ProjectileRaycast.RespectCanCollide = true
 	local Toggles = {}
 	local old
-	
+
 	local valid = {
 		[lplr.PlayerScripts.Combat.Handlers.Bow:GetFullName()] = {
 			'Fire'
@@ -678,30 +678,30 @@ run(function()
 			'Launch'
 		}
 	}
-	
+
 	local validarg = {
 		[lplr.PlayerScripts.Combat.Handlers.Bow:GetFullName()] = 'Muzzle',
 		[lplr.PlayerScripts.Combat.Handlers.Gun:GetFullName()] = 'Muzzle',
 		[lplr.PlayerScripts.Combat.Handlers.Melee:GetFullName()] = 'None',
 		[lplr.PlayerScripts.Combat.Handlers.Throw:GetFullName()] = 'Throw'
 	}
-	
+
 	local function getMousePosition()
 		if inputService.TouchEnabled then
 			return gameCamera.ViewportSize / 2
 		end
-	
+
 		return inputService:GetMouseLocation()
 	end
-	
+
 	local function Hook(...)
 		hideStack()
-	
+
 		local n, s = getCaller()
 		if not (argCheck({{'Vector3', 'nil'}}, ...) and valid[s] and table.find(valid[s], n)) then
 			return old(...)
 		end
-	
+
 		local handler
 		for _, obj in debug.getstack(3) do
 			if type(obj) == 'table' and rawget(obj, 'tuning') then
@@ -709,7 +709,7 @@ run(function()
 				break
 			end
 		end
-	
+
 		if handler then
 			if type(tribes.Handlers) == 'table' then
 				for index, obj in next, tribes.Handlers do
@@ -718,7 +718,7 @@ run(function()
 					end
 				end
 			end
-	
+
 			local arg = ...
 			if arg then
 				if not validarg[s] then
@@ -731,7 +731,7 @@ run(function()
 					return old(...)
 				end
 			end
-	
+
 			local entity = entitylib.EntityMouse({
 				Range = Range.Value,
 				Part = Part.Value,
@@ -739,7 +739,7 @@ run(function()
 				NPCs = Target.NPCs.Enabled,
 				Wallcheck = Target.Walls.Enabled and true or nil
 			})
-	
+
 			if entity then
 				local targetPart = entity[Part.Value]
 				local origin = ... or gameCamera.CFrame.Position
@@ -747,36 +747,36 @@ run(function()
 				local gravity = safeget(handler, 'tuning', 'gravity') or (rawget(handler, 'spreadNow') and 0 or 60)
 				ProjectileRaycast.FilterDescendantsInstances = {gameCamera, entity.Character}
 				ProjectileRaycast.CollisionGroup = targetPart.CollisionGroup
-	
+
 				if rawget(handler, 'drawStart') then
 					projSpeed = select(2, tribes.Combat.DrawnShot(rawget(handler, 'tuning'), debug.getstack(3, 4)))
 				end
-	
+
 				local throw = safeget(handler, 'tuning', 'throw')
 				if throw then
 					projSpeed = rawget(throw, 'speed') or 120
 					gravity = rawget(throw, 'gravity') or 0
 				end
-	
+
 				local calc = prediction.SolveTrajectory(origin, projSpeed, math.abs(gravity), targetPart.Position + (Part.Value == 'Head' and Vector3.new(0, 0.3, 0) or Vector3.zero), Prediction.Enabled and VelocityTracker:Get(entity.RootPart, PredictionTime.Value) or targetPart.AssemblyLinearVelocity, workspace.Gravity, entity.HipHeight, nil, ProjectileRaycast)
 				if calc then
 					local kind = rawget(handler, 'kind')
 					local lookDir = CFrame.lookAt(origin, calc).LookVector
 					targetinfo.Targets[entity] = os.clock() + 1
-	
+
 					if rawget(handler, 'maxCharges') then
 						return (lookDir - Vector3.new(0, ((kind == 'Bomb') and 0.16) or (((kind == 'Sling') and 0.05) or (((kind ~= 'Javelin') and 0.01) or 0.04)), 0)).Unit
 					end
-	
+
 					if throw then
 						local aimPoint = debug.getstack(3, 5)
 						local someMag = (aimPoint - origin).Magnitude
-	
+
 						if gravity > 0 and someMag > 1 then
 							return (lookDir * someMag - Vector3.new(0, 0.5 * gravity * (someMag / projSpeed) * (someMag / projSpeed), 0)).Unit
 						end
 					end
-	
+
 					if rawget(handler, 'spreadNow') and kind ~= 'Blunderbuss' then
 						local spread
 						if kind == 'Crossbow' then
@@ -786,42 +786,42 @@ run(function()
 						else
 							spread = safeget(handler, 'tuning', 'spreadHip') or 0
 						end
-	
+
 						local spreadDir = tribes.Combat.SpreadDir(lookDir, spread, handler:Seed(rawget(tribes.State, 'shotId') + 1), 0)
 						return (CFrame.lookAt(Vector3.zero, lookDir) * CFrame.lookAt(Vector3.zero, lookDir):ToObjectSpace(CFrame.lookAt(Vector3.zero, spreadDir)):Inverse()).LookVector
 					end
-	
+
 					return lookDir
 				end
 			end
 		end
-	
+
 		return old(...)
 	end
-	
+
 	SilentAim = vape.Categories.Combat:CreateModule({
 		Name = 'SilentAim',
 		Function = function(callback)
 			if CircleObject then
 				CircleObject.Visible = callback
 			end
-	
+
 			if callback then
 				if not setstackhidden then
 					notif('SilentAim', 'setstackhidden only currently.', 10, 'alert')
 					SilentAim:Toggle()
 					return
 				end
-	
+
 				old = hookfunction(rawget(tribes.Util, 'AimDirection'), function(...)
 					return Hook(...)
 				end)
-	
+
 				repeat
 					if CircleObject then
 						CircleObject.Position = getMousePosition()
 					end
-	
+
 					task.wait()
 				until not SilentAim.Enabled
 			else
@@ -942,7 +942,7 @@ run(function()
 		Darker = true,
 		Visible = false
 	})
-	
+
 	if type(tribes.Handlers) == 'table' then
 		for index in next, tribes.Handlers do
 			if type(index) == 'string' then
@@ -971,18 +971,18 @@ run(function()
 	local ParticleSize
 	local Particle, Box = nil, nil
 	local gamingThread
-	
+
 	SilentAura = vape.Categories.Combat:CreateModule({
 		Name = 'SilentAura',
 		Function = function(callback)
 			if callback then
 				local didSwing
-	
+
 				SilentAura:Clean(runService.PostSimulation:Connect(function()
 					gamingThread = task.defer(function()
 						local attacked, old, oldpos
 						local handler = rawget(tribes.State, 'handler')
-	
+
 						if entitylib.isAlive and handler and type(rawget(handler, 'lastSwing')) == 'number' then
 							local localPos = entitylib.character.RootPart.Position
 							local localFacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
@@ -994,32 +994,32 @@ run(function()
 								NPCs = Targets.NPCs.Enabled,
 								Limit = 10
 							})
-	
+
 							if #entities > 0 then
 								for _, entity in entities do
 									local cmpPos = entity.RootPart.Position
 									local delta = (cmpPos - localPos)
 									local yaw = select(2, gameCamera.CFrame:ToEulerAnglesYXZ())
 									local angle = math.abs(CFrame.fromEulerAnglesYXZ(0, yaw, 0).LookVector:Angle(delta * Vector3.new(1, 0, 1)))
-	
+
 									if angle > (math.rad(AngleSlider.Value) / 2) or (not VerticalReach.Enabled and math.abs(delta.Y) >= 8) then
 										continue
 									end
-	
+
 									if AutoSwing.Enabled and not rawget(handler, 'holding') then
 										local gui = lplr.PlayerGui:FindFirstChild('CombatTouch', true)
 										gui = gui and gui.Enabled and gui:FindFirstChild('Attack', true) or nil
-	
+
 										if gui and gui:IsA('TextButton') and gui.Visible then
 											local cPos = gui.AbsolutePosition + guiService:GetGuiInset()
 											vim:SendTouchEvent(0, 0, cPos.X, cPos.Y)
 										else
 											vim:SendMouseButtonEvent(gameCamera.ViewportSize.X / 2, gameCamera.ViewportSize.Y / 2, 0, true, nil, 0)
 										end
-	
+
 										didSwing = true
 									end
-	
+
 									attacked = entity
 									targetinfo.Targets[entity] = os.clock() + 1
 									old = gameCamera.CFrame
@@ -1027,43 +1027,43 @@ run(function()
 									if angle > math.rad(100) then
 										entitylib.character.RootPart.CFrame = CFrame.lookAlong(localPos, delta * Vector3.new(1, 0, 1))
 									end
-	
+
 									if VerticalReach.Enabled then
 										oldpos = entitylib.character.RootPart.CFrame
 										entitylib.character.RootPart.CFrame = CFrame.new(cmpPos)
 									end
-	
+
 									break
 								end
 							else
 								if AutoSwing.Enabled and rawget(handler, 'holding') and didSwing then
 									local gui = lplr.PlayerGui:FindFirstChild('CombatTouch', true)
 									gui = gui and gui.Enabled and gui:FindFirstChild('Attack', true) or nil
-	
+
 									if gui and gui:IsA('TextButton') and gui.Visible then
 										local cPos = gui.AbsolutePosition + guiService:GetGuiInset()
 										vim:SendTouchEvent(0, 2, cPos.X, cPos.Y)
 									else
 										vim:SendMouseButtonEvent(gameCamera.ViewportSize.X / 2, gameCamera.ViewportSize.Y / 2, 0, false, nil, 0)
 									end
-	
+
 									didSwing = false
 								end
 							end
-	
+
 							--[[if AutoBlock.Enabled and handler.tuning.block then
 								if handler:Ready() and #entities > 0 then
 									handler:SetBlock(false)
 									handler:Swing()
 								end
-	
+
 								handler:SetBlock(true)
 								if vape.ThreadFix then
 									setthreadidentity(8)
 								end
 							end]]
 						end
-	
+
 						if Box then
 							Box.Adornee = attacked and attacked.RootPart or nil
 							if Box.Adornee then
@@ -1071,24 +1071,24 @@ run(function()
 								Box.Transparency = 1 - BoxAttackColor.Opacity
 							end
 						end
-	
+
 						if Particle then
 							Particle.Position = attacked and attacked.RootPart.Position or Vector3.new(math.huge, math.huge, math.huge)
 							Particle.Parent = attacked and gameCamera or nil
 						end
-	
+
 						task.wait()
-	
+
 						if old then
 							gameCamera.CFrame = old
 							old = nil
 						end
-	
+
 						if oldpos then
 							entitylib.character.RootPart.CFrame = oldpos
 							oldpos = nil
 						end
-	
+
 						gamingThread = nil
 					end)
 				end))
@@ -1097,11 +1097,11 @@ run(function()
 					task.cancel(gamingThread)
 					gamingThread = nil
 				end
-	
+
 				if Box then
 					Box.Adornee = nil
 				end
-	
+
 				if Particle then
 					Particle.Parent = nil
 				end
@@ -1141,7 +1141,7 @@ run(function()
 		Name = 'Show target',
 		Function = function(callback)
 			BoxAttackColor.Object.Visible = callback
-	
+
 			if callback then
 				Box = Instance.new('BoxHandleAdornment')
 				Box.Adornee = nil
@@ -1169,7 +1169,7 @@ run(function()
 			ParticleColor1.Object.Visible = callback
 			ParticleColor2.Object.Visible = callback
 			ParticleSize.Object.Visible = callback
-	
+
 			if callback then
 				Particle = Instance.new('Part')
 				Particle.Size = Vector3.new(2, 4, 2)
@@ -1255,7 +1255,7 @@ end)
 
 run(function()
 	local Velocity
-	
+
 	local function LocalAdded(char)
 		Velocity:Clean(char.RootPart.AttributeChanged:Connect(function(key)
 			if key:find('Kb') and char.RootPart:GetAttribute(key) then
@@ -1263,7 +1263,7 @@ run(function()
 			end
 		end))
 	end
-	
+
 	Velocity = vape.Categories.Combat:CreateModule({
 		Name = 'Velocity',
 		Function = function(callback)
@@ -1280,7 +1280,7 @@ end)
 
 run(function()
 	local AntiFall
-	
+
 	AntiFall = vape.Categories.Blatant:CreateModule({
 		Name = 'AntiFall',
 		Function = function(callback)
@@ -1289,7 +1289,7 @@ run(function()
 					if entitylib.isAlive then
 						local root = entitylib.character.RootPart
 						local diff = math.max(root.Position.Y, -29.9) - root.Position.Y
-	
+
 						if math.abs(diff) > 0 then
 							root.CFrame += Vector3.new(0, diff, 0)
 							root.AssemblyLinearVelocity *= Vector3.new(1, 0, 1)
@@ -1304,17 +1304,17 @@ end)
 
 run(function()
 	local AntiFreeze
-	
+
 	local function LocalAdded(char)
 		AntiFreeze:Clean(char.RootPart.AttributeChanged:Connect(function(key)
 			if key == 'SFrozen' and char.RootPart:GetAttribute(key) then
 				char.RootPart:SetAttribute(key, nil)
 			end
 		end))
-	
+
 		char.RootPart:SetAttribute('SFrozen', nil)
 	end
-	
+
 	AntiFreeze = vape.Categories.Blatant:CreateModule({
 		Name = 'AntiFreeze',
 		Function = function(callback)
@@ -1331,18 +1331,18 @@ end)
 
 run(function()
 	local AntiStun
-	
+
 	local function LocalAdded(char)
 		AntiStun:Clean(char.RootPart.AttributeChanged:Connect(function(key)
 			if (key == 'SNoJump' or key == 'SSlow') and char.RootPart:GetAttribute(key) then
 				char.RootPart:SetAttribute(key, nil)
 			end
 		end))
-	
+
 		char.RootPart:SetAttribute('SNoJump', nil)
 		char.RootPart:SetAttribute('SSlow', nil)
 	end
-	
+
 	AntiStun = vape.Categories.Blatant:CreateModule({
 		Name = 'AntiStun',
 		Function = function(callback)
@@ -1366,7 +1366,7 @@ run(function()
 		Reload = true,
 		Aim = true
 	}
-	
+
 	NoSlowdown = vape.Categories.Blatant:CreateModule({
 		Name = 'NoSlowdown',
 		Function = function(callback)
@@ -1377,7 +1377,7 @@ run(function()
 						table.insert(inputs, input)
 					end
 				end
-	
+
 				NoSlowdown:Clean(runService.PreSimulation:Connect(function()
 					for _, input in inputs do
 						if input:GetState() then
@@ -1398,7 +1398,7 @@ run(function()
 	local YToggle
 	local ZToggle
 	local Value
-	
+
 	SpinBot = vape.Categories.Blatant:CreateModule({
 		Name = 'SpinBot',
 		Function = function(callback)
@@ -1409,7 +1409,7 @@ run(function()
 							if entitylib.character.Humanoid.Sit then
 								return
 							end
-	
+
 							local original = entitylib.character.RootPart.AssemblyAngularVelocity
 							entitylib.character.Humanoid.AutoRotate = false
 							entitylib.character.RootPart.AssemblyAngularVelocity = Vector3.new(XToggle.Enabled and Value.Value or original.X, YToggle.Enabled and Value.Value or original.Y, ZToggle.Enabled and Value.Value or original.Z)
@@ -1417,7 +1417,7 @@ run(function()
 							if entitylib.character.Humanoid.Sit then
 								return
 							end
-	
+
 							local val = math.rad((os.clock() * (20 * Value.Value)) % 360)
 							local x, y, z = entitylib.character.RootPart.CFrame:ToOrientation()
 							entitylib.character.RootPart.CFrame = CFrame.new(entitylib.character.RootPart.Position) * CFrame.Angles(XToggle.Enabled and val or x, YToggle.Enabled and val or y, ZToggle.Enabled and val or z)
@@ -1458,15 +1458,15 @@ end)
 run(function()
 	local old
 	local cmp = lplr.PlayerScripts.Combat.Handlers.Melee:GetFullName()
-	
+
 	local function Hook(...)
 		hideStack()
-	
+
 		local n, s = getCaller()
 		if not (argCheck({{'table'}}, ...) and n == 'Swing' and s == cmp) then
 			return old(...)
 		end
-	
+
 		local self = ...
 		if getrawmetatable(self) == tribes.Melee and self == tribes.State.handler and type(rawget(self, 'lastSwing')) == 'number' then
 			task.defer(function()
@@ -1474,10 +1474,10 @@ run(function()
 				rawset(self, 'lastSwing', rawget(self, 'lastSwing') - (type(cooldown) == 'number' and cooldown or 0.1))
 			end)
 		end
-	
+
 		return old(...)
 	end
-	
+
 	SwingSpeed = vape.Categories.Blatant:CreateModule({
 		Name = 'SwingSpeed',
 		Function = function(callback)
@@ -1516,7 +1516,7 @@ run(function()
 	local Folder = Instance.new('Folder')
 	Folder.Parent = vape.gui
 	local methodused
-	
+
 	local function getInventory(entity, state)
 		local cmpId = type(entity) == 'string' and entity or entity.Character:GetAttribute('CombatantId')
 		if state or tribes.UIState.Match then
@@ -1527,32 +1527,32 @@ run(function()
 						if member.loadout.armor then
 							table.insert(items, 1, member.loadout.armor)
 						end
-	
+
 						return items
 					end
 				end
 			end
 		end
 	end
-	
+
 	local function deepEq(tab, tab2)
 		if type(tab) ~= 'table' or type(tab2) ~= 'table' then
 			return tab == tab2
 		end
-	
+
 		if #tab ~= #tab2 then
 			return false
 		end
-	
+
 		for i = 1, #tab do
 			if tab[i] ~= tab2[i] then
 				return false
 			end
 		end
-	
+
 		return true
 	end
-	
+
 	local Added = {
 		Normal = function(entity)
 			if not Targets.Players.Enabled and entity.Player then return end
@@ -1561,18 +1561,18 @@ run(function()
 			if vape.ThreadFix then
 				setthreadidentity(8)
 			end
-	
+
 			Strings[entity] = entity.Player and whitelist:tag(entity.Player, true, true)..(DisplayName.Enabled and entity.Player.DisplayName or entity.Player.Name) or entity.Character.Name
-	
+
 			if Health.Enabled then
 				local healthColor = Color3.fromHSV(math.clamp(entity.Health / entity.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
 				Strings[entity] = Strings[entity]..' <font color="#'..healthColor:ToHex()..'">'..math.round(entity.Health)..'</font>'
 			end
-	
+
 			if Distance.Enabled then
 				Strings[entity] = '<font color="#55ff55">[</font><font color="#ffffff">%s</font><font color="#55ff55">]</font> '..Strings[entity]
 			end
-	
+
 			local nametag = Instance.new('TextLabel')
 			nametag.TextSize = 14 * Scale.Value
 			nametag.FontFace = FontOption.Value
@@ -1589,27 +1589,27 @@ run(function()
 			nametag.TextColor3 = entitylib.getEntityColor(entity) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
 			nametag.RichText = true
 			nametag.Parent = Folder
-	
+
 			if Equipment.Enabled then
 				local inv = getInventory(entity)
 				if inv then
 					local old = debug.getupvalue(tribes.WeaponRedraw, 1)
 					debug.setupvalue(tribes.WeaponRedraw, 1, {})
-	
+
 					local holder = Instance.new('Frame')
 					holder.AnchorPoint = Vector2.new(0.5, 0)
 					holder.BackgroundTransparency = 1
 					holder.Position = UDim2.fromScale(0.5, 0)
 					holder.Size = UDim2.fromOffset(#inv * 30, 0)
 					holder.Parent = nametag
-	
+
 					for i, item in inv do
 						local Icon = Instance.new('Frame')
 						Icon.BackgroundTransparency = 1
 						Icon.Position = UDim2.fromOffset(-30 + (i * 30), -30)
 						Icon.Size = UDim2.fromOffset(30, 30)
 						Icon.Parent = workspace
-	
+
 						if setstackhidden then
 							local ffunctions = {debug.info(1, 'f'), debug.info(2, 'f'), debug.info(3, 'f'), debug.info(4, 'f'), debug.info(5, 'f')}
 							for _, func in ffunctions do
@@ -1617,30 +1617,30 @@ run(function()
 									setstackhidden(func, true)
 								end
 							end
-	
+
 							table.clear(ffunctions)
 							tribes.WeaponIcon(Icon, {id = item, opts = {glow = false, outline = false}})
 						end
-	
+
 						task.defer(function()
 							Icon.Parent = holder
 						end)
 					end
-	
+
 					debug.setupvalue(tribes.WeaponRedraw, 1, old)
 					if vape.ThreadFix then
 						setthreadidentity(8)
 					end
 				end
 			end
-	
+
 			Reference[entity] = nametag
 		end,
 		Drawing = function(entity)
 			if not Targets.Players.Enabled and entity.Player then return end
 			if not Targets.NPCs.Enabled and entity.NPC then return end
 			if Teammates.Enabled and (not entity.Targetable) and (not entity.Friend) then return end
-	
+
 			local nametag = {}
 			nametag.BG = Drawing.new('Square')
 			nametag.BG.Filled = true
@@ -1652,22 +1652,22 @@ run(function()
 			nametag.Text.Font = 0
 			nametag.Text.ZIndex = 2
 			Strings[entity] = entity.Player and whitelist:tag(entity.Player, true)..(DisplayName.Enabled and entity.Player.DisplayName or entity.Player.Name) or entity.Character.Name
-	
+
 			if Health.Enabled then
 				Strings[entity] = Strings[entity]..' '..math.round(entity.Health)
 			end
-	
+
 			if Distance.Enabled then
 				Strings[entity] = '[%s] '..Strings[entity]
 			end
-	
+
 			nametag.Text.Text = Strings[entity]
 			nametag.Text.Color = entitylib.getEntityColor(entity) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
 			nametag.BG.Size = Vector2.new(nametag.Text.TextBounds.X + 8, nametag.Text.TextBounds.Y + 7)
 			Reference[entity] = nametag
 		end
 	}
-	
+
 	local Removed = {
 		Normal = function(entity)
 			local v = Reference[entity]
@@ -1700,7 +1700,7 @@ run(function()
 			end
 		end
 	}
-	
+
 	local Updated = {
 		Normal = function(entity)
 			local nametag = Reference[entity]
@@ -1710,16 +1710,16 @@ run(function()
 				end
 				Sizes[entity] = nil
 				Strings[entity] = entity.Player and whitelist:tag(entity.Player, true, true)..(DisplayName.Enabled and entity.Player.DisplayName or entity.Player.Name) or entity.Character.Name
-	
+
 				if Health.Enabled then
 					local color = Color3.fromHSV(math.clamp(entity.Health / entity.MaxHealth, 0, 1) / 2.5, 0.89, 0.75)
 					Strings[entity] = Strings[entity]..' <font color="#'..color:ToHex()..'">'..math.round(entity.Health)..'</font>'
 				end
-	
+
 				if Distance.Enabled then
 					Strings[entity] = '<font color="#55ff55">[</font><font color="#ffffff">%s</font><font color="#55ff55">]</font> '..Strings[entity]
 				end
-	
+
 				local size = getfontbounds(removeTags(Strings[entity]), nametag.TextSize, nametag.FontFace, Vector2.new(100000, 100000))
 				nametag.Size = UDim2.fromOffset(size.X + 8, size.Y + 7)
 				nametag.Text = Strings[entity]
@@ -1733,24 +1733,24 @@ run(function()
 				end
 				Sizes[entity] = nil
 				Strings[entity] = entity.Player and whitelist:tag(entity.Player, true)..(DisplayName.Enabled and entity.Player.DisplayName or entity.Player.Name) or entity.Character.Name
-	
+
 				if Health.Enabled then
 					Strings[entity] = Strings[entity]..' '..math.round(entity.Health)
 				end
-	
+
 				if Distance.Enabled then
 					Strings[entity] = '[%s] '..Strings[entity]
 					nametag.Text.Text = entitylib.isAlive and string.format(Strings[entity], math.floor((entitylib.character.RootPart.Position - entity.RootPart.Position).Magnitude)) or Strings[entity]
 				else
 					nametag.Text.Text = Strings[entity]
 				end
-	
+
 				nametag.BG.Size = Vector2.new(nametag.Text.TextBounds.X + 8, nametag.Text.TextBounds.Y + 7)
 				nametag.Text.Color = entitylib.getEntityColor(entity) or Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
 			end
 		end
 	}
-	
+
 	local ColorFunc = {
 		Normal = function(hue, sat, val)
 			local color = Color3.fromHSV(hue, sat, val)
@@ -1765,7 +1765,7 @@ run(function()
 			end
 		end
 	}
-	
+
 	local Loop = {
 		Normal = function()
 			for entity, nametag in Reference do
@@ -1776,13 +1776,13 @@ run(function()
 						continue
 					end
 				end
-	
+
 				local headPos, headVis = gameCamera:WorldToViewportPoint(entity.RootPart.Position + Vector3.new(0, entity.HipHeight + 1, 0))
 				nametag.Visible = headVis
 				if not headVis then
 					continue
 				end
-	
+
 				if Distance.Enabled then
 					local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - entity.RootPart.Position).Magnitude) or 0
 					if Sizes[entity] ~= mag then
@@ -1792,7 +1792,7 @@ run(function()
 						Sizes[entity] = mag
 					end
 				end
-	
+
 				nametag.Position = UDim2.fromOffset(headPos.X, headPos.Y)
 			end
 		end,
@@ -1806,14 +1806,14 @@ run(function()
 						continue
 					end
 				end
-	
+
 				local headPos, headVis = gameCamera:WorldToViewportPoint(entity.RootPart.Position + Vector3.new(0, entity.HipHeight + 1, 0))
 				nametag.Text.Visible = headVis
 				nametag.BG.Visible = headVis
 				if not headVis then
 					continue
 				end
-	
+
 				if Distance.Enabled then
 					local mag = entitylib.isAlive and math.floor((entitylib.character.RootPart.Position - entity.RootPart.Position).Magnitude) or 0
 					if Sizes[entity] ~= mag then
@@ -1822,13 +1822,13 @@ run(function()
 						Sizes[entity] = mag
 					end
 				end
-	
+
 				nametag.BG.Position = Vector2.new(headPos.X - (nametag.BG.Size.X / 2), headPos.Y - nametag.BG.Size.Y)
 				nametag.Text.Position = nametag.BG.Position + Vector2.new(4, 3)
 			end
 		end
 	}
-	
+
 	NameTags = vape.Categories.Render:CreateModule({
 		Name = 'NameTags',
 		Function = function(callback)
@@ -1850,7 +1850,7 @@ run(function()
 						end
 						Added[methodused](entity)
 					end))
-	
+
 					if Equipment.Enabled then
 						local state = tribes.UIState.Match
 						NameTags:Clean(replicatedStorage.Remotes.MatchState.OnClientEvent:Connect(function(newState, ...)
@@ -1864,7 +1864,7 @@ run(function()
 														if Reference[entity] then
 															Removed[methodused](entity)
 														end
-	
+
 														Added[methodused](entity)
 														break
 													end
@@ -1873,7 +1873,7 @@ run(function()
 										end
 									end
 								end
-	
+
 								state = newState
 							end)
 						end))
@@ -2045,7 +2045,7 @@ end)
 
 run(function()
 	local NoSmoke
-	
+
 	NoSmoke = vape.Categories.Render:CreateModule({
 		Name = 'NoSmoke',
 		Function = function(callback)
@@ -2055,7 +2055,7 @@ run(function()
 						obj:Destroy()
 					end
 				end))
-	
+
 				for _, obj in workspace.FX:GetChildren() do
 					if obj.Name == 'PuffFX' then
 						obj:Destroy()
@@ -2078,16 +2078,16 @@ run(function()
 	local Folder = Instance.new('Folder')
 	Folder.Parent = vape.holder
 	local Frame
-	
+
 	local function Added(obj)
 		if vape.ThreadFix then
 			setthreadidentity(8)
 		end
-	
+
 		if obj:GetAttribute('Team') == lplr:GetAttribute('Team') then
 			return
 		end
-	
+
 		local box = Instance.new('BoxHandleAdornment')
 		box.AlwaysOnTop = Walls.Enabled
 		box.Adornee = obj
@@ -2098,25 +2098,25 @@ run(function()
 		box.Parent = Folder
 		Reference[obj] = box
 	end
-	
+
 	local function Removed(obj)
 		if Reference[obj] then
 			if vape.ThreadFix then
 				setthreadidentity(8)
 			end
-	
+
 			Reference[obj]:Destroy()
 			Reference[obj] = nil
 		end
 	end
-	
+
 	TrapESP = vape.Categories.Render:CreateModule({
 		Name = 'TrapESP',
 		Function = function(callback)
 			if callback then
 				TrapESP:Clean(collectionService:GetInstanceAddedSignal('BearTrap'):Connect(Added))
 				TrapESP:Clean(collectionService:GetInstanceRemovedSignal('BearTrap'):Connect(Removed))
-	
+
 				for _, obj in collectionService:GetTagged('BearTrap') do
 					task.spawn(Added, obj)
 				end
@@ -2163,7 +2163,7 @@ run(function()
 	local AutoQueue
 	local Delay
 	local Notification
-	
+
 	AutoQueue = vape.Categories.Utility:CreateModule({
 		Name = 'AutoQueue',
 		Function = function(callback)
@@ -2173,16 +2173,16 @@ run(function()
 						local button = lplr.PlayerGui:FindFirstChild('TR_Menus')
 						local holder = button and button:FindFirstChild('MatchEnd', true) or nil
 						button = holder and holder:FindFirstChild('PlayAgain', true) or nil
-	
+
 						if button and button:IsA('TextButton') and button.Visible and holder.Visible and canClickButton(button) then
 							AutoQueue:Clean(task.delay(Delay.Value, clickButton, button))
 							if Notification.Enabled and Delay.Value > 0 then
 								notif('AutoQueue', 'Playing again in '..string.format('%.1f', Delay.Value)..' seconds!', Delay.Value)
 							end
-	
+
 							break
 						end
-	
+
 						task.wait(0.05)
 					until not AutoQueue.Enabled
 				end))
@@ -2210,21 +2210,21 @@ run(function()
 	local AutoToxic
 	local GG
 	local Toggles, Lists, Cloned, Presets = {}, {}, {}, {}
-	
+
 	local function sendMessage(name, obj, default)
 		local message = default
 		if #Lists[name].ListEnabled > 0 then
 			if #Cloned[name] <= 0 then
 				Cloned[name] = table.clone(Lists[name].ListEnabled)
 			end
-	
+
 			local entry = Random.new():NextInteger(1, #Cloned[name])
 			message = Cloned[name][entry]
 			table.remove(Cloned[name], entry)
 		end
-	
+
 		if not message then return end
-	
+
 		message = message and message:gsub('<obj>', obj or '') or ''
 		if textChatService:CanUserChatAsync(lplr.UserId) then
 			textChatService.ChatInputBarConfiguration.TargetTextChannel:SendAsync(message)
@@ -2232,7 +2232,7 @@ run(function()
 			textChatService.ChatInputBarConfiguration.TargetTextChannel:SendPresetAsync(Presets[message] or Presets['So close'])
 		end
 	end
-	
+
 	AutoToxic = vape.Categories.Utility:CreateModule({
 		Name = 'AutoToxic',
 		Function = function(callback)
@@ -2245,7 +2245,7 @@ run(function()
 							textChatService.ChatInputBarConfiguration.TargetTextChannel:SendPresetAsync(Presets['Good game'])
 						end
 					end
-	
+
 					if won then
 						if Toggles.Win.Enabled then
 							sendMessage('Win', nil, 'yall garbage')
@@ -2279,7 +2279,7 @@ run(function()
 			end
 		})
 	end
-	
+
 	pcall(function()
 		for _, group in textChatService:GetPresetsAsync().categoryGroups do
 			for _, category in group.categories do
@@ -2296,7 +2296,7 @@ run(function()
 	local RankUp
 	local Drops
 	local Replay
-	
+
 	AutoSkip = vape.Categories.Inventory:CreateModule({
 		Name = 'AutoSkip',
 		Function = function(callback)
@@ -2306,7 +2306,7 @@ run(function()
 					if bind.priorityLevel and RankUp.Enabled then
 						local rankupgui = lplr.PlayerGui:FindFirstChild('TR_RankUp')
 						local button = rankupgui and rankupgui:FindFirstChild('Continue', true) or nil
-	
+
 						if button and button:IsA('TextButton') then
 							clickButton(button)
 						end
@@ -2314,11 +2314,11 @@ run(function()
 						local reveal = lplr.PlayerGui:FindFirstChild('TR_Reveal')
 						reveal = reveal and reveal.Enabled and reveal:FindFirstChild('Canvas') or nil
 						reveal = reveal and reveal.Visible and reveal:FindFirstChild('Reveal') or nil
-	
+
 						if Drops.Enabled and reveal and reveal.Visible then
 							local button1 = reveal and reveal:FindFirstChild('Skip', true) or nil
 							local button2 = reveal and reveal:FindFirstChild('Continue', true) or nil
-	
+
 							if button1 and button1:IsA('TextButton') and button2 and button2:IsA('TextButton') then
 								clickButton(button1)
 								clickButton(button2)
@@ -2326,13 +2326,13 @@ run(function()
 						elseif Replay.Enabled then
 							local replayhud = lplr.PlayerGui:FindFirstChild('TR_ReplayHud')
 							local button = replayhud and replayhud:FindFirstChild('Skip', true) or nil
-	
+
 							if button and button:IsA('TextButton') and button.Visible and replayhud.Enabled then
 								clickButton(button)
 							end
 						end
 					end
-	
+
 					task.wait(0.05)
 				until not AutoSkip.Enabled
 			end
@@ -2355,7 +2355,7 @@ end)
 
 run(function()
 	local AutoUpgrade
-	
+
 	AutoUpgrade = vape.Categories.Inventory:CreateModule({
 		Name = 'AutoUpgrade',
 		Function = function(callback)
@@ -2363,15 +2363,15 @@ run(function()
 				repeat
 					local gui = lplr.PlayerGui:FindFirstChild('TR_Menus')
 					gui = gui and gui:FindFirstChild('Collection', true) or nil
-	
+
 					if gui and gui:IsA('Frame') then
 						local holder = gui:FindFirstChild('Grid', true)
-	
+
 						if holder and holder:IsA('ScrollingFrame') then
 							for _, button in holder:GetChildren() do
 								if button:IsA('TextButton') then
 									local upgrade = button:FindFirstChild('Upgrade', true)
-	
+
 									if upgrade and upgrade:IsA('TextButton') and upgrade.Visible then
 										clickButton(upgrade)
 										break
@@ -2380,7 +2380,7 @@ run(function()
 							end
 						end
 					end
-	
+
 					task.wait(0.05)
 				until not AutoUpgrade.Enabled
 			end

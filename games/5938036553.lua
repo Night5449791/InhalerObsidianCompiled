@@ -419,34 +419,34 @@ run(function()
 	local headChain = {'Root_M', 'Spine1_M', 'Spine2_M', 'Chest_M', 'Neck_M', 'Head_M'}
 	local rayCheck = RaycastParams.new()
 	rayCheck.RespectCanCollide = true
-	
+
 	AimAssist = vape.Categories.Combat:CreateModule({
 		Name = 'AimAssist',
 		Function = function(callback)
 			if CircleObject then
 				CircleObject.Visible = callback
 			end
-	
+
 			if not callback then return end
-	
+
 			local cameraMode = AimAssistMethod.Value == 'Camera'
 			local touch = inputService.TouchEnabled
-	
+
 			local function step(dt)
 				if CircleObject then
 					CircleObject.Position = touch and gameCamera.ViewportSize / 2 or inputService:GetMouseLocation()
 				end
-	
+
 				if not cameraMode and not inputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then return end
-	
+
 				local main = frontlines and frontlines.Main
 				local globals = main and main.globals
 				if not globals then return end
-	
+
 				local instances = globals.fpv_sol_instances
 				local bone = instances and instances.camera_bone
 				local origin = bone and bone.WorldPosition or gameCamera.CFrame.Position
-	
+
 				local ent = entitylib.EntityMouse({
 					Range = FOV.Value,
 					Players = true,
@@ -454,46 +454,46 @@ run(function()
 					Part = 'RootPart',
 					Origin = origin
 				})
-	
+
 				if not ent then return end
-	
+
 				local equipment = globals.fpv_sol_equipment
 				local gun = equipment and equipment.curr_equipment
 				if not gun or not gun.fire_params then return end
-	
+
 				local node = ent.RootPart
 				for _, name in headChain do
 					node = node and node[name]
 				end
-	
+
 				local targetpos = node and node.WorldCFrame.Position
 				if not targetpos then return end
-	
+
 				rayCheck.FilterDescendantsInstances = {gameCamera, ent.Character}
 				rayCheck.CollisionGroup = ent.RootPart.CollisionGroup
 				local calc = prediction.SolveTrajectory(origin, gun.fire_params.muzzle_velocity, workspace.Gravity, targetpos, Vector3.zero, workspace.Gravity, ent.HipHeight, nil, rayCheck)
 				if not calc then return end
-	
+
 				targetinfo.Targets[ent] = os.clock() + 1
-	
+
 				if cameraMode then
 					local camCF = gameCamera.CFrame
 					local blended = camCF.LookVector:Lerp((calc - camCF.Position).Unit, math.min(Speed.Value * dt, 1))
 					local magnitude = blended.Magnitude
 					if magnitude < 0.01 then return end
-	
+
 					gameCamera.CFrame = CFrame.lookAt(camCF.Position, camCF.Position + blended / magnitude)
 				else
 					if not main.exe_set or not main.exe_set_t then return end
-	
+
 					local pos = gameCamera:WorldToViewportPoint(calc)
 					local cursor = touch and gameCamera.ViewportSize / 2 or inputService:GetMouseLocation()
 					local localmouse = (cursor - Vector2.new(pos.X, pos.Y)) * dt * (Speed.Value / 10000)
-	
+
 					main.exe_set(main.exe_set_t.CTRL_SOL_ATT_ROT, localmouse.Y, localmouse.X)
 				end
 			end
-	
+
 			if cameraMode then
 				runService:BindToRenderStep('InhalerAimAssist', Enum.RenderPriority.Camera.Value + 1, step)
 				AimAssist:Clean(function()
@@ -594,7 +594,7 @@ run(function()
 		Darker = true,
 		Visible = false
 	})
-	
+
 end)
 
 run(function()
@@ -613,15 +613,15 @@ run(function()
 	local ProjectileRaycast = RaycastParams.new()
 	ProjectileRaycast.RespectCanCollide = true
 	local rand, old = Random.new()
-	
+
 	local function getMousePosition()
 		if inputService.TouchEnabled then
 			return gameCamera.ViewportSize / 2
 		end
-	
+
 		return inputService:GetMouseLocation()
 	end
-	
+
 	local function getTarget(origin, obj)
 		if rand.NextNumber(rand, 0, 100) > (AutoFire.Enabled and 100 or HitChance.Value) then
 			return
@@ -636,14 +636,14 @@ run(function()
 			Players = Target.Players.Enabled,
 			NPCs = Target.NPCs.Enabled
 		})
-	
+
 		if entity then
 			targetinfo.Targets[entity] = os.clock() + 1
 		end
-	
+
 		return entity, entity and entity[targetPart]
 	end
-	
+
 	local function raycastLoop(origin, pos)
 		local returned
 		local real = origin
@@ -658,18 +658,18 @@ run(function()
 		end
 		return returned
 	end
-	
+
 	SilentAim = vape.Categories.Combat:CreateModule({
 		Name = 'SilentAim',
 		Function = function(callback)
 			if CircleObject then
 				CircleObject.Visible = callback and Mode.Value == 'Mouse'
 			end
-	
+
 			if callback then
 				old = hookfunction(frontlines.ShootFunction, function(shootid, fire, pos, dir, ...)
 					if not frontlines.Main then return end
-	
+
 					local cstate = frontlines.Main.globals.cli_state
 					if cstate.state == frontlines.Main.cli_state_t.COMBAT and (shootid % frontlines.Main.globals.cli_id_alloc.m) == cstate.id then
 						local ent, targetPart = getTarget(pos)
@@ -678,30 +678,30 @@ run(function()
 							local targetpos = targetPart.Root_M.Spine1_M.WorldCFrame.Position
 							ProjectileRaycast.FilterDescendantsInstances = {gameCamera, ent.Character}
 							ProjectileRaycast.CollisionGroup = targetPart.CollisionGroup
-	
+
 							if Wallbang.Enabled then
 								local wall = raycastLoop(pos, targetpos)
 								if wall and (pos - wall).Magnitude < 8 then
 									pos = wall
 								end
 							end
-	
+
 							local calc = prediction.SolveTrajectory(pos, velo, workspace.Gravity, targetpos, Vector3.zero, workspace.Gravity, ent.HipHeight, nil, ProjectileRaycast)
 							if calc then
 								dir = -CFrame.new(pos, calc).ZVector * velo
 							end
 						end
 					end
-	
+
 					return old(shootid, fire, pos, dir, ...)
 				end)
-	
+
 				local oldent
 				repeat
 					if CircleObject then
 						CircleObject.Position = getMousePosition()
 					end
-	
+
 					if AutoFire.Enabled then
 						local entity = entitylib['Entity'..Mode.Value]({
 							Range = Range.Value,
@@ -711,7 +711,7 @@ run(function()
 							Players = Target.Players.Enabled,
 							NPCs = Target.NPCs.Enabled
 						})
-	
+
 						local gun = frontlines.Main.globals.fpv_sol_equipment.curr_equipment
 						entity = gun and gun.type ~= 2 and entity or nil
 						if entity ~= oldent or entity then
@@ -719,11 +719,11 @@ run(function()
 							if entity then
 								frontlines.Main.globals.ctrl_ts.trigger = time()
 							end
-	
+
 							oldent = entity
 						end
 					end
-	
+
 					task.wait()
 				until not SilentAim.Enabled
 			else
@@ -835,7 +835,7 @@ end)
 
 run(function()
 	local Sprint
-	
+
 	Sprint = vape.Categories.Combat:CreateModule({
 		Name = 'Sprint',
 		Function = function(callback)
@@ -863,7 +863,7 @@ end)
 run(function()
 	local GrenadeTP
 	local Range
-	
+
 	GrenadeTP = vape.Categories.Blatant:CreateModule({
 		Name = 'GrenadeTP',
 		Function = function(callback)
@@ -877,7 +877,7 @@ run(function()
 								Origin = v.model.PrimaryPart.Position,
 								Players = true
 							})
-	
+
 							if ent then
 								local id
 								for i, hash in frontlines.Main.globals.soldier_hitbox_hash do
@@ -886,7 +886,7 @@ run(function()
 										break
 									end
 								end
-	
+
 								if id then
 									v.model:PivotTo(ent.RootPart.Root_M.Spine1_M.WorldCFrame)
 								end
@@ -913,7 +913,7 @@ run(function()
 	local Spread
 	local FireRate
 	local Automatic
-	
+
 	GunModifications = vape.Categories.Blatant:CreateModule({
 		Name = 'GunModifications',
 		Function = function(callback)
@@ -924,14 +924,14 @@ run(function()
 						return true
 					end
 				end))
-	
+
 				GunModifications:Clean(hookEvent('STEP_FPV_SOL_FIREARM_SPREAD', function()
 					if Spread.Enabled then
 						frontlines.Main.globals.fpv_sol_spread.spread = 0
 						return true
 					end
 				end))
-	
+
 				repeat
 					local gun = frontlines.Main.globals.fpv_sol_equipment.curr_equipment
 					if Reload.Enabled then
@@ -946,13 +946,13 @@ run(function()
 							gun.fire_params.rpm = 4000 
 						end
 					end
-	
+
 					if Automatic.Enabled then 
 						if gun and gun.fire_params then 
 							gun.fire_params.cycle_mode = frontlines.Main.cycle_mode.AUTO
 						end
 					end
-	
+
 					task.wait()
 				until not GunModifications.Enabled
 			end
@@ -987,21 +987,21 @@ run(function()
 	local Particles = {}
 	local hitdelay = tick()
 	local didattack = false
-	
+
 	local function getAttackData()
 		if Mouse.Enabled then
 			if not inputService:IsMouseButtonPressed(0) then return false end
 		end
-	
+
 		local gun = frontlines.Main.globals.fpv_sol_equipment.curr_equipment
 		local knifecheck = gun and gun.type == 2 and true or false
 		if Limit.Enabled then
 			if not knifecheck then return false end
 		end
-	
+
 		return true, knifecheck
 	end
-	
+
 	Killaura = vape.Categories.Blatant:CreateModule({
 		Name = 'Killaura',
 		Function = function(callback)
@@ -1020,18 +1020,18 @@ run(function()
 							NPCs = Targets.NPCs.Enabled,
 							Limit = Max.Value
 						})
-	
+
 						if #plrs > 0 then
 							local gun = frontlines.Main.globals.fpv_sol_equipment.curr_equipment
 							local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
-	
+
 							for i, v in plrs do
 								local delta = (v.RootPart.Position - entitylib.character.RootPart.Position)
 								local angle = math.acos(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit))
 								if angle > (math.rad(Angle.Value) / 2) then continue end
 								table.insert(attacked, {Entity = v, Check = delta.Magnitude > AttackRange.Value and BoxSwingColor or BoxAttackColor})
 								targetinfo.Targets[v] = os.clock() + 1
-	
+
 								if delta.Magnitude > AttackRange.Value then continue end
 								didattack = knifecheck
 								if hitdelay < tick() then
@@ -1042,7 +1042,7 @@ run(function()
 											break
 										end
 									end
-	
+
 									if id then
 										hitdelay = tick() + 0.1
 										frontlines.Main.utils.net_msg_util.c_prep_net_msg(frontlines.Main.globals.combat_net_msg_state, frontlines.Main.enums.c_net_msg.MELEE_HIT_SOL, id)
@@ -1059,11 +1059,11 @@ run(function()
 							end
 						end
 					end
-	
+
 					if didattack ~= prevattack and prevattack then
 						frontlines.Main.globals.ctrl_states.trigger = false
 					end
-	
+
 					for i, v in Boxes do
 						v.Adornee = attacked[i] and attacked[i].Entity.RootPart or nil
 						if v.Adornee then
@@ -1071,12 +1071,12 @@ run(function()
 							v.Transparency = 1 - attacked[i].Check.Opacity
 						end
 					end
-	
+
 					for i, v in Particles do
 						v.Position = attacked[i] and attacked[i].Entity.RootPart.Position or Vector3.new(9e9, 9e9, 9e9)
 						v.Parent = attacked[i] and gameCamera or nil
 					end
-	
+
 					task.wait()
 				until not Killaura.Enabled
 			else
@@ -1257,7 +1257,7 @@ end)
 
 run(function()
 	local Phase
-	
+
 	Phase = vape.Categories.Blatant:CreateModule({
 		Name = 'Phase',
 		Function = function(callback)
@@ -1268,7 +1268,7 @@ run(function()
 						root.CanCollide = false
 					end
 				end))
-	
+
 				local root = frontlines.Main.globals.fpv_sol_instances.root
 				if root then
 					root.CanCollide = false
@@ -1295,7 +1295,7 @@ run(function()
 	for i = 1, 40 do
 		table.insert(aimtable, Vector3.zero)
 	end
-	
+
 	SpinBot = vape.Categories.Blatant:CreateModule({
 		Name = 'SpinBot',
 		Function = function(callback)
@@ -1307,10 +1307,10 @@ run(function()
 						frontlines.Main.globals.sol_root_parts[id].Root_M.CFrame = CFrame.Angles(0, 0.5 * v6.y, math.rad(-90))
 					end
 				end))
-	
+
 				debug.setupvalue(frontlines.Events[frontlines.Main.exe_func_t.STEP_FPV_SOL_NET_EGRESS], 3, aimtable)
 				debug.setupvalue(frontlines.Events[frontlines.Main.exe_func_t.STEP_TPV_SOLDIER_JOINTS], 16, aimtable)
-	
+
 				repeat
 					aimtable = table.clone(frontlines.Main.globals.sol_attitudes)
 					aimtable[frontlines.Main.globals.cli_state.fpv_sol_id] = Vector3.new(math.clamp(math.rad(pitch), -maxy, maxy), math.rad(yaw))
@@ -1359,7 +1359,7 @@ run(function()
 	local Folder = Instance.new('Folder')
 	Folder.Parent = vape.holder
 	local old
-	
+
 	local function addESP(v)
 		if vape.ThreadFix then
 			setthreadidentity(8)
@@ -1395,7 +1395,7 @@ run(function()
 			end
 		end)
 	end
-	
+
 	GrenadeESP = vape.Categories.Render:CreateModule({
 		Name = 'GrenadeESP',
 		Function = function(callback)
@@ -1442,7 +1442,7 @@ end)
 
 run(function()
 	local NoHurtCam
-	
+
 	NoHurtCam = vape.Categories.Render:CreateModule({
 		Name = 'NoHurtCam',
 		Function = function(callback)
@@ -1460,7 +1460,7 @@ run(function()
 	local ThirdPerson
 	local Distance
 	local hook = false
-	
+
 	ThirdPerson = vape.Categories.Render:CreateModule({
 		Name = 'ThirdPerson',
 		Function = function(callback)
@@ -1482,7 +1482,7 @@ run(function()
 						return true
 					end
 				end))
-	
+
 				if entitylib.isAlive then
 					local char = entitylib.character.Character
 					for i, v in char:GetDescendants() do
@@ -1491,7 +1491,7 @@ run(function()
 						end
 					end
 				end
-	
+
 				ThirdPerson:Clean(entitylib.Events.LocalAdded:Connect(function(ent)
 					local id = frontlines.Main.globals.cli_state.fpv_sol_id
 					local actor = frontlines.Main.soldier_actors[id]
@@ -1502,7 +1502,7 @@ run(function()
 						frontlines.Events[frontlines.Main.exe_func_t.SET_SOLDIER_ANIMATION_VALUES](id, gun)
 						actor.main.alive.Value = true
 					end
-	
+
 					for i, v in ent.Character:GetDescendants() do
 						if v:IsA('BasePart') then 
 							v.LocalTransparencyModifier = v.Parent ~= ent.Character and 1 or 0 
@@ -1532,7 +1532,7 @@ end)
 
 run(function()
 	local AutoRespawn
-	
+
 	AutoRespawn = vape.Categories.Utility:CreateModule({
 		Name = 'AutoRespawn',
 		Function = function(callback)
@@ -1555,7 +1555,7 @@ run(function()
 	local Delay
 	local Hide
 	local oldchat
-	
+
 	ChatSpammer = vape.Categories.Utility:CreateModule({
 		Name = 'ChatSpammer',
 		Function = function(callback)
@@ -1587,7 +1587,7 @@ end)
 run(function()
 	local PickupRange
 	local Range
-	
+
 	PickupRange = vape.Categories.Utility:CreateModule({
 		Name = 'PickupRange',
 		Function = function(callback)
@@ -1605,7 +1605,7 @@ run(function()
 							end
 						end
 					end
-	
+
 					task.wait(0.05)
 				until not PickupRange.Enabled
 			end
@@ -1628,7 +1628,7 @@ run(function()
 	local Fade
 	local DrawingToggle
 	local drawingobjs = {}
-	
+
 	BulletTracers = vape.Legit:CreateModule({
 		Name = 'BulletTracers',
 		Function = function(callback)
@@ -1666,7 +1666,7 @@ run(function()
 						debrisService:AddItem(obj, Lifetime.Value)
 					end
 				end))
-	
+
 				if DrawingToggle.Enabled then
 					BulletTracers:Clean(runService.RenderStepped:Connect(function()
 						for obj, data in drawingobjs do 

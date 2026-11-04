@@ -281,32 +281,32 @@ run(function()
 	local AutoArrest
 	local ArrestRange
 	local ArrestDelay
-	
+
 	-- triggering the character's own ArrestPrompt is the normal arrest, so nothing is spoofed here
 	AutoArrest = vape.Categories.Blatant:CreateModule({
 		Name = 'AutoArrest',
 		Function = function(callback)
 			if not callback then return end
-	
+
 			repeat
 				local root = sentence.root(lplr)
-	
+
 				if root and sentence.isCop(lplr) then
 					-- the sliders are read once per pass, not once per player
 					local range = ArrestRange.Value
 					local origin = root.Position
-	
+
 					for _, plr in playersService:GetPlayers() do
 						if plr == lplr or not sentence.isDowned(plr) or not sentence.isTarget(plr) then continue end
-	
+
 						local other = sentence.root(plr)
 						if not other or (other.Position - origin).Magnitude > range then continue end
-	
+
 						-- the prompt is parented to the root this pass already has, so it is not
 						-- walked to a second time through sentence.root
 						local prompt = other:FindFirstChild('ArrestPrompt')
 						if not prompt then continue end
-	
+
 						prompt.MaxActivationDistance = range
 						prompt.HoldDuration = 0
 						pcall(prompt.InputHoldBegin, prompt)
@@ -316,7 +316,7 @@ run(function()
 						break
 					end
 				end
-	
+
 				task.wait(0.2)
 			until not AutoArrest.Enabled or vape.Loaded == nil
 		end,
@@ -342,7 +342,7 @@ run(function()
 			return 's'
 		end
 	})
-	
+
 end)
 
 run(function()
@@ -350,26 +350,26 @@ run(function()
 	local ResetDistance
 	local ResetWhileDowned
 	local guards = nil
-	
+
 	-- the reset button is wired to WeaponEvent:FireServer('Reset'), which is also the cheapest way
 	-- out of an arrest: a downed player that respawns cannot be handcuffed any more
 	AutoReset = vape.Categories.Blatant:CreateModule({
 		Name = 'AutoReset',
 		Function = function(callback)
 			if not callback then return end
-	
+
 			guards = sentence.Teams.Guards
-	
+
 			repeat
 				local reset = ResetWhileDowned.Enabled and sentence.status(lplr, 'Downed') == true
-	
+
 				if not reset then
 					local distance = ResetDistance.Value
 					if distance > 0 then
 						reset = sentence.nearestPlayer(guards, distance) ~= nil
 					end
 				end
-	
+
 				if reset then
 					sentence.fire('WeaponEvent', 'Reset')
 					task.wait(0.5)
@@ -394,7 +394,7 @@ run(function()
 		Name = 'Reset while downed',
 		Default = true
 	})
-	
+
 end)
 
 run(function()
@@ -402,7 +402,7 @@ run(function()
 	local StompRange
 	local StompDelay
 	local StompTeamCheck
-	
+
 	-- E is the stomp key, the client sends CarryStompEvent:FireServer('EPress') from both the
 	-- StompButton and the keyboard binding, so the module repeats that call while a downed player is
 	-- close enough to be finished
@@ -410,20 +410,20 @@ run(function()
 		Name = 'AutoStomp',
 		Function = function(callback)
 			if not callback then return end
-	
+
 			repeat
 				local root = sentence.root(lplr)
-	
+
 				if root then
 					-- the options are read once per pass, not once per player
 					local range = StompRange.Value
 					local teamCheck = StompTeamCheck.Enabled
 					local origin = root.Position
-	
+
 					for _, plr in playersService:GetPlayers() do
 						if plr == lplr or not sentence.isDowned(plr) then continue end
 						if teamCheck and not sentence.isTarget(plr) then continue end
-	
+
 						local other = sentence.root(plr)
 						if other and (other.Position - origin).Magnitude <= range then
 							sentence.fire('CarryStompEvent', 'EPress')
@@ -431,7 +431,7 @@ run(function()
 						end
 					end
 				end
-	
+
 				task.wait(StompDelay.Value)
 			until not AutoStomp.Enabled or vape.Loaded == nil
 		end,
@@ -461,56 +461,56 @@ run(function()
 		Default = true,
 		Tooltip = 'Skips teammates and friends'
 	})
-	
+
 end)
 
 run(function()
 	local DownedESP
 	local DownedColor
-	
+
 	-- keyed by player, not by character: a respawn swaps the body under the same player, and a
 	-- character-keyed table would keep the old entry (and its Highlight) alive forever
 	local highlights = setmetatable({}, {__mode = 'k'})
-	
+
 	local function clearHighlights()
 		for _, record in highlights do
 			record.Highlight:Destroy()
 		end
-	
+
 		table.clear(highlights)
 	end
-	
+
 	local function updateHighlightColor()
 		local color = Color3.fromHSV(DownedColor.Hue, DownedColor.Sat, DownedColor.Value)
-	
+
 		for _, record in highlights do
 			record.Highlight.FillColor = color
 			record.Highlight.OutlineColor = color
 		end
 	end
-	
+
 	DownedESP = vape.Categories.Render:CreateModule({
 		Name = 'DownedESP',
 		Function = function(callback)
 			clearHighlights()
-	
+
 			if not callback then return end
-	
+
 			repeat
 				local localCharacter = lplr.Character
-	
+
 				for _, plr in playersService:GetPlayers() do
 					local character = plr.Character
 					local record = highlights[plr]
 					local downed = character ~= nil and character ~= localCharacter and sentence.isDowned(plr)
-	
+
 					-- the body is gone, the player is no longer downed, or this is a respawn
 					if record and (not downed or record.Character ~= character) then
 						record.Highlight:Destroy()
 						highlights[plr] = nil
 						record = nil
 					end
-	
+
 					if downed and not record then
 						local color = Color3.fromHSV(DownedColor.Hue, DownedColor.Sat, DownedColor.Value)
 						local highlight = Instance.new('Highlight')
@@ -524,10 +524,10 @@ run(function()
 						highlights[plr] = {Character = character, Highlight = highlight}
 					end
 				end
-	
+
 				task.wait(0.5)
 			until not DownedESP.Enabled or vape.Loaded == nil
-	
+
 			clearHighlights()
 		end,
 		Tooltip = 'Highlights players that are downed and can be arrested or stomped'
@@ -541,5 +541,5 @@ run(function()
 			updateHighlightColor()
 		end
 	})
-	
+
 end)

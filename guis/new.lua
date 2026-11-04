@@ -16261,6 +16261,251 @@ local Library = (function()
 
 end)()
 
+local color = {}
+local uipallet = {}
+do
+	function color.Dark(col, num)
+		local h, s, v = col:ToHSV()
+		return Color3.fromHSV(h, s, math.clamp(select(3, uipallet.Main:ToHSV()) > 0.5 and v + num or v - num, 0, 1))
+	end
+
+	function color.Light(col, num)
+		local h, s, v = col:ToHSV()
+		return Color3.fromHSV(h, s, math.clamp(select(3, uipallet.Main:ToHSV()) > 0.5 and v - num or v + num, 0, 1))
+	end
+
+	function vape:Color(h)
+		local s = 0.74 + (0.26 * math.min(h / 0.045, 1))
+
+		if h > 0.577 then
+			s = 1 - (0.48 * math.min((h - 0.577) / 0.088, 1))
+		end
+
+		if h > 0.674 then
+			s = 0.52 + (0.48 * math.min((h - 0.674) / 0.149, 1))
+		end
+
+		if h > 0.869 then
+			s = 1 - (0.26 * math.min((h - 0.869) / 0.131, 1))
+		end
+
+		return h, s, 1
+	end
+
+	function vape:TextColor(h, s, v)
+		if v >= 0.7 and (s < 0.6 or h > 0.04 and h < 0.56) then
+			return Color3.new(0.19, 0.19, 0.19)
+		end
+
+		return Color3.new(1, 1, 1)
+	end
+end
+
+local function getfontbounds(text, size, font)
+	fontsize.Text = text
+	fontsize.Size = size
+	if typeof(font) == 'Font' then
+		fontsize.Font = font
+	end
+
+	return textService:GetTextBoundsAsync(fontsize)
+end
+
+do
+	local vapeAssets = {
+		['newvape/assets/new/add.png'] = 'rbxassetid://121642387707174',
+		['newvape/assets/new/aim.png'] = 'rbxassetid://122207028123421',
+		['newvape/assets/new/allowedicon.png'] = 'rbxassetid://112336790299036',
+		['newvape/assets/new/allowediconmini.png'] = 'rbxassetid://90142384730147',
+		['newvape/assets/new/back.png'] = 'rbxassetid://80523803497740',
+		['newvape/assets/new/backmini.png'] = 'rbxassetid://85859225495272',
+		['newvape/assets/new/bind.png'] = 'rbxassetid://81399857677684',
+		['newvape/assets/new/bindbkg.png'] = 'rbxassetid://101996225428926',
+		['newvape/assets/new/blatant.png'] = 'rbxassetid://126929923309265',
+		['newvape/assets/new/blur.png'] = 'rbxassetid://79246816170155',
+		['newvape/assets/new/blurnoti.png'] = 'rbxassetid://124705876663719',
+		['newvape/assets/new/close.png'] = 'rbxassetid://121816018671466',
+		['newvape/assets/new/closemini.png'] = 'rbxassetid://108320409341289',
+		['newvape/assets/new/closetiny.png'] = 'rbxassetid://71393233149714',
+		['newvape/assets/new/colorpreview.png'] = 'rbxassetid://140438628568318',
+		['newvape/assets/new/combat.png'] = 'rbxassetid://94762732349053',
+		['newvape/assets/new/customtheme.png'] = 'rbxassetid://91756736022800',
+		['newvape/assets/new/discord.png'] = 'rbxassetid://99871463341003',
+		['newvape/assets/new/downexpand.png'] = 'rbxassetid://94197751291504',
+		['newvape/assets/new/downexpandslider.png'] = 'rbxassetid://90289944682645',
+		['newvape/assets/new/edit.png'] = 'rbxassetid://105801951237137',
+		['newvape/assets/new/editlarge.png'] = 'rbxassetid://119233876755282',
+		['newvape/assets/new/expandarrow.png'] = 'rbxassetid://86360332526471',
+		['newvape/assets/new/friends.png'] = 'rbxassetid://92957214042038',
+		['newvape/assets/new/inventory.png'] = 'rbxassetid://93264756888499',
+		['newvape/assets/new/legit_mode_icon.png'] = 'rbxassetid://102858626075156',
+		['newvape/assets/new/legit_switch.png'] = 'rbxassetid://127508881124779',
+		['newvape/assets/new/min.png'] = 'rbxassetid://82175054487146',
+		['newvape/assets/new/noti_alert.png'] = 'rbxassetid://82356478726846',
+		['newvape/assets/new/noti_info.png'] = 'rbxassetid://102614825645099',
+		['newvape/assets/new/noti_warning.png'] = 'rbxassetid://119631730212167',
+		['newvape/assets/new/notification.png'] = 'rbxassetid://90300780458781',
+		['newvape/assets/new/npcs.png'] = 'rbxassetid://104434365485227',
+		['newvape/assets/new/overlaydots.png'] = 'rbxassetid://78012624671930',
+		['newvape/assets/new/overlays.png'] = 'rbxassetid://136535637407545',
+		['newvape/assets/new/overlayslarge.png'] = 'rbxassetid://127574141208160',
+		['newvape/assets/new/pin.png'] = 'rbxassetid://92459145800579',
+		['newvape/assets/new/players.png'] = 'rbxassetid://105137446428129',
+		['newvape/assets/new/profiles.png'] = 'rbxassetid://126051451865127',
+		['newvape/assets/new/radar.png'] = 'rbxassetid://97983828696086',
+		['newvape/assets/new/rainbow_1.png'] = 'rbxassetid://101329996188554',
+		['newvape/assets/new/rainbow_2.png'] = 'rbxassetid://72739074644654',
+		['newvape/assets/new/rainbow_3.png'] = 'rbxassetid://100716555253397',
+		['newvape/assets/new/rainbow_4.png'] = 'rbxassetid://133424174227092',
+		['newvape/assets/new/range.png'] = 'rbxassetid://107794917650053',
+		['newvape/assets/new/rangeindicator.png'] = 'rbxassetid://107038094175283',
+		['newvape/assets/new/render.png'] = 'rbxassetid://125472576898654',
+		['newvape/assets/new/search.png'] = 'rbxassetid://115611852955611',
+		['newvape/assets/new/settingdots.png'] = 'rbxassetid://130896840048276',
+		['newvape/assets/new/settings.png'] = 'rbxassetid://73820177347303',
+		['newvape/assets/new/settingsmini.png'] = 'rbxassetid://115732118290997',
+		['newvape/assets/new/targetinfo.png'] = 'rbxassetid://121604266095276',
+		['newvape/assets/new/textgui.png'] = 'rbxassetid://99438663817412',
+		['newvape/assets/new/theme.png'] = 'rbxassetid://111525258317113',
+		['newvape/assets/new/utility.png'] = 'rbxassetid://108303206513893',
+		['newvape/assets/new/vape.png'] = 'rbxassetid://92153855792786',
+		['newvape/assets/new/vapelogo.png'] = 'rbxassetid://126205920310261',
+		['newvape/assets/new/vapelogomini.png'] = 'rbxassetid://109041903452149',
+		['newvape/assets/new/v4.png'] = 'rbxassetid://102549752760489',
+		['newvape/assets/new/v4mini.png'] = 'rbxassetid://115213099001611',
+		['newvape/assets/new/world.png'] = 'rbxassetid://118917453153459'
+	}
+
+	local function createDownloader(text)
+		if vape.Loaded ~= true then
+			local downloader = vape.Downloader
+			if not downloader then
+				downloader = Instance.new('TextLabel')
+				downloader.BackgroundTransparency = 1
+				downloader.FontFace = uipallet.Font
+				downloader.Size = UDim2.new(1, 0, 0, 40)
+				downloader.TextColor3 = Color3.new(1, 1, 1)
+				downloader.TextSize = 20
+				downloader.TextStrokeTransparency = 0
+				downloader.Parent = vape.gui
+				vape.Downloader = downloader
+			end
+
+			downloader.Text = 'Downloading '..text
+		end
+	end
+
+	local function downloadFile(path, callback)
+		if not isfile(path) then
+			createDownloader(path)
+
+			local success, data = pcall(function()
+				return game:HttpGet('https://raw.githubusercontent.com/Night5449791/InhalerObsidianCompiled/'..readfile('newvape/profiles/commit.txt')..'/'..select(1, path:gsub('newvape/', '')), true)
+			end)
+
+			if not success or data == '404: Not Found' then
+				error(data)
+			end
+
+			if path:find('.lua') then
+				data = '--This watermark is used to delete the file if its cached, remove it to make the file persist after vape updates.\n'..data
+			end
+
+			writefile(path, data)
+		end
+
+		return (callback or readfile)(path)
+	end
+
+	getvapeasset = not inputService.TouchEnabled and getcustomasset and function(path)
+		return downloadFile(path, getcustomasset)
+	end or function(path)
+		return vapeAssets[path] or ''
+	end
+end
+
+local tween = setmetatable({}, {
+	__index = function()
+		return {}
+	end
+})
+
+do
+	function tween:Tween(obj, info, goal, index)
+		index = self[index or 'tweens']
+		if index[obj] then
+			index[obj]:Cancel()
+			index[obj] = nil
+		end
+
+		if obj.Parent and (obj:IsA('UIStroke') or obj.Visible) then
+			index[obj] = tweenService:Create(obj, info, goal)
+			index[obj].Completed:Once(function()
+				if index then
+					index[obj] = nil
+					index = nil
+				end
+			end)
+
+			index[obj]:Play()
+		else
+			for prop, value in goal do
+				obj[prop] = value
+			end
+		end
+	end
+
+	function tween:Cancel(obj, index)
+		index = self[index or 'tweens']
+
+		if index[obj] then
+			index[obj]:Cancel()
+			index[obj] = nil
+		end
+	end
+end
+
+uipallet = {
+	Main = Color3.fromRGB(26, 25, 26),
+	Text = Color3.fromRGB(200, 200, 200),
+	Font = Font.fromEnum(Enum.Font.Arial),
+	FontSemiBold = Font.fromEnum(Enum.Font.Arial, Enum.FontWeight.SemiBold),
+	Tween = TweenInfo.new(0.15, Enum.EasingStyle.Linear)
+}
+
+do
+	local data = isfile('newvape/profiles/color.txt') and loadJson('newvape/profiles/color.txt')
+	if data then
+		uipallet.Main = data.Main and Color3.fromRGB(unpack(data.Main)) or uipallet.Main
+		uipallet.Text = data.Text and Color3.fromRGB(unpack(data.Text)) or uipallet.Text
+		uipallet.Font = data.Font and Font.new(
+			data.Font:find('rbxasset') and data.Font
+			or string.format('rbxasset://fonts/families/%s.json', data.Font)
+		) or uipallet.Font
+		uipallet.FontSemiBold = Font.new(uipallet.Font.Family, Enum.FontWeight.SemiBold)
+	end
+
+	fontsize.Font = uipallet.Font
+end
+
+-- the Obsidian scheme replaces the Vape palette, so a theme change reaches the modules
+if Library and Library.Scheme then
+	uipallet.Main = Library.Scheme.MainColor
+	uipallet.Text = Library.Scheme.FontColor
+	uipallet.Accent = Library.Scheme.AccentColor
+	uipallet.Outline = Library.Scheme.OutlineColor
+	if Library.Scheme.Font then uipallet.Font = Library.Scheme.Font end
+	if Library.Scheme.Font then uipallet.FontSemiBold = Library.Scheme.Font end
+end
+
+vape.Libraries = {
+	color = color,
+	getfontbounds = getfontbounds,
+	getvapeasset = getvapeasset,
+	tween = tween,
+	uipallet = uipallet
+}
+
 local function addBlur(parent, notif, old)
 	local blur
 	if old then
@@ -16767,538 +17012,851 @@ end
 
 function vape:LoadGUI()
 	--[[
-		Obsidian adapter for the Vape API.
+		ObsidianCompat — Vape component surface on top of Obsidian.
 
-		Every game module under src/games/ is written against `vape.Categories.X:CreateModule`
-		and `Module:CreateYyy`, and the profile format expects each option to save a fixed
-		shape. This file keeps both and only changes what draws them: a category is a Tab,
-		a module is a toggle, and a module's options live in the dependency box under it.
+		Inlined into vape:LoadGUI() right after --Init and before init.lua, so every
+		`components.X(props, children, api)` call resolves to an adapter below.
+		`components` is a base.lua local; this file only fills it.
 
-		Loaded into vape:LoadGUI() before init.lua, so `components` exists when the window
-		is built and `vape`, `Library`, `addMaid` are already in scope as upvalues.
+		Save shapes are a wire format (AGENTS.md §4.4 / §4.5) and are not negotiable:
+		Toggle {Enabled} · Slider {Value, Max} · Dropdown {Value} · TwoSlider {ValueMin, ValueMax}
+		ColorSlider {Hue, Sat, Value, Opacity, Rainbow} · Bind {Keys, Mobile, Hold} · TextBox {Value}
+		Targets {Players, NPCs, Walls} · Button / Divider nothing.
 	]]
 
-	-- `components` is declared by base.lua above the --Init slot and is what init.lua
-	-- and the Components metatable read, so the adapter is built under a local name
-	-- and assigned to it at the end. Assigning into it directly would shadow it.
 	local adapters = {}
 
-	-- one adapter per option, shared by every type: the game code only ever touches
-	-- `.Enabled`, `.Value`, `.Object`, `:Toggle()` and `:Save`/`:Load`
-	local function newOption(kind, props, api)
-		local option = {
-			Type = kind,
-			Name = props.Name or kind,
-			Module = api,
-			Options = {},
-			Connections = {},
-			Enabled = false,
-			Visible = props.Visible ~= false
-		}
-
-		addMaid(option)
-
-		function option:Toggle()
-			self.Enabled = not self.Enabled
-
-			if not self.Enabled then
-				for _, connection in self.Connections do
-					connection:Disconnect()
-				end
-
-				table.clear(self.Connections)
-			end
-
-			if props.Function then
-				task.spawn(props.Function, self.Enabled)
-			end
+	local function isArray(values)
+		if type(values) ~= 'table' then
+			return false
 		end
 
-		function option:Clean(callback)
-			option.Connections[#option.Connections + 1] = callback
+		local count = 0
+		for _ in values do
+			count = count + 1
 		end
 
-		return option
+		return count == #values
 	end
 
-	--[[ Toggle ]]
+	local function toList(values)
+		if type(values) ~= 'table' then
+			return {}
+		end
+
+		local list = {}
+		local array = isArray(values)
+		if array then
+			for key, value in values do
+				if type(key) == 'number' and key >= 1 and key <= #values then
+					table.insert(list, value)
+				end
+			end
+		else
+			for key, value in values do
+				if value == true then
+					table.insert(list, tostring(key))
+				else
+					table.insert(list, tostring(value))
+				end
+			end
+		end
+
+		return list
+	end
+
+	local function toSet(values)
+		local set = {}
+		local list = toList(values)
+		for _, value in list do
+			set[value] = true
+		end
+
+		return set
+	end
+
+	local function toKeys(values)
+		if type(values) == 'table' then
+			local keys = toList(values)
+			if #keys > 0 then
+				return keys
+			end
+
+			return nil
+		end
+
+		if type(values) == 'string' and values ~= '' and values ~= 'None' then
+			return {values}
+		end
+
+		return {}
+	end
+
+	local function selection(value, options)
+		if value == nil then
+			return nil
+		end
+
+		if options.Multi then
+			local set = type(value) == 'table' and toSet(value) or {[value] = true}
+			return next(set) ~= nil and set or {}
+		end
+
+		if type(value) == 'table' then
+			local list = toList(value)
+			return list[1]
+		end
+
+		return value
+	end
+
+	local function notify(title, text, duration, kind)
+		vape:CreateNotification(title, text, duration or 5, kind)
+	end
+
+	local function defaultColor(value)
+		if typeof(value) == 'Color3' then
+			return value
+		end
+
+		local number = type(value) == 'number' and value or 500
+		return Color3.fromHSV((number % 1000) / 1000, 0.5, 0.9)
+	end
+
+	--[[ options ]]
 
 	adapters.Toggle = function(props, api)
-		local option = newOption('Toggle', props, api)
-		local callback = props.Function
+		local option = {
+			Connections = {},
+			Enabled = props.Default == true,
+			Name = props.Name,
+			Options = {},
+			Type = 'Toggle'
+		}
 
-		option.Object = api.Groupbox:AddToggle(option.Name, {
-			Text = props.Name,
-			Default = props.Default or false,
-			Tooltip = props.Tooltip,
-			Callback = function(value)
-				option.Enabled = value
+		option.Object = api.Groupbox:AddToggle(props.Name, {
+			Callback = function(state)
+				option.Enabled = state
 
-				if not value then
-					for _, connection in option.Connections do
-						connection:Disconnect()
-					end
-
-					table.clear(option.Connections)
+				if props.Callback then
+					props.Callback(state)
 				end
-
-				if callback then
-					task.spawn(callback, value)
-				end
-			end
+			end,
+			Default = option.Enabled,
+			Text = props.Text or props.Name,
+			Tooltip = props.Tooltip
 		})
-		option.Enabled = props.Default or false
+		option.Object.Value = option.Enabled
 
-		function option:Toggle()
-			option.Object:SetValue(not option.Object.Value)
+		function option.Toggle(self)
+			self.Object:SetValue(not self.Object.Value)
 		end
 
-		function option:Save(data)
-			data.Enabled = option.Object.Value
+		function option.Clean(self, callback)
+			self.Connections[#self.Connections + 1] = callback
 		end
 
-		function option:Load(data)
-			if data.Enabled ~= nil then
-				option.Object:SetValue(data.Enabled)
+		function option.Save(self, data)
+			data.Enabled = self.Object.Value
+		end
+
+		function option.Load(self, data)
+			if type(data) ~= 'table' or type(data.Enabled) ~= 'boolean' then
+				return
 			end
+
+			self.Object:SetValue(data.Enabled)
 		end
+
+		option.Object.Value = option.Enabled
 
 		return option
 	end
-
-	--[[ Slider ]]
 
 	adapters.Slider = function(props, api)
-		local option = newOption('Slider', props, api)
-		local callback = props.Function
+		local option = {
+			Connections = {},
+			Name = props.Name,
+			Options = {},
+			Type = 'Slider',
+			Value = props.Default
+		}
 
-		option.Max = props.Max or 100
-		option.Object = api.Groupbox:AddSlider(option.Name, {
-			Text = props.Name,
-			Default = props.Default or 0,
-			Min = props.Min or 0,
-			Max = props.Max or 100,
-			Rounding = props.Decimal or 0,
-			Prefix = props.Prefix or '',
-			Suffix = props.Suffix or '',
-			Tooltip = props.Tooltip,
+		option.Object = api.Groupbox:AddSlider(props.Name, {
 			Callback = function(value)
 				option.Value = value
 
-				if callback then
-					task.spawn(callback, value)
+				if props.Callback then
+					props.Callback(value)
 				end
-			end
+			end,
+			Default = props.Default,
+			Max = props.Max,
+			Min = props.Min,
+			Prefix = props.Prefix,
+			Rounding = props.Rounding or 0,
+			Suffix = props.Suffix,
+			Text = props.Text or props.Name,
+			Tooltip = props.Tooltip
 		})
-		option.Value = option.Object.Value
+		option.Object.Value = option.Value
 
-		function option:Save(data)
-			data.Value = option.Object.Value
-			data.Max = option.Max
+		function option.Clean(self, callback)
+			self.Connections[#self.Connections + 1] = callback
 		end
 
-		function option:Load(data)
-			if data.Value ~= nil then
+		function option.Save(self, data)
+			data.Max = self.Object.Max or props.Max
+			data.Value = self.Object.Value
+		end
+
+		function option.Load(self, data)
+			if type(data) ~= 'table' then
+				return
+			end
+
+			if type(data.Max) == 'number' and data.Max ~= option.Object.Max then
+				option.Object.Max = data.Max
+				if option.Object.SetMax then
+					option.Object:SetMax(data.Max)
+				end
+			end
+
+			if type(data.Value) == 'number' then
 				option.Object:SetValue(data.Value)
-				option.Value = option.Object.Value
 			end
 		end
 
 		return option
 	end
-
-	--[[ Dropdown ]]
 
 	adapters.Dropdown = function(props, api)
-		local option = newOption('Dropdown', props, api)
-		local callback = props.Function
-		local list = props.List or {}
+		local list = toList(props.Values or props.List)
+		local multi = props.Multi == true
+		local option = {
+			Connections = {},
+			List = list,
+			Name = props.Name,
+			Options = {},
+			Type = 'Dropdown',
+			Value = props.Default
+		}
 
-		option.Object = api.Groupbox:AddDropdown(option.Name, {
-			Text = props.Name,
-			Values = list,
-			Default = props.Default,
-			Multi = props.Multi or false,
-			AllowNull = props.Multi or false,
-			Tooltip = props.Tooltip,
+		if multi then
+			option.Value = type(props.Default) == 'table' and toSet(props.Default) or {}
+		elseif props.Default == nil then
+			option.Value = list[1]
+		end
+
+		option.Object = api.Groupbox:AddDropdown(props.Name, {
+			AllowNull = props.AllowNull,
 			Callback = function(value)
-				option.Value = value
-
-				if callback then
-					task.spawn(callback, value)
+				if multi then
+					option.Value = type(value) == 'table' and value or {}
+				else
+					option.Value = value
 				end
-			end
-		})
-		option.Value = option.Object.Value
 
-		function option:Change(newList)
-			option.Object:SetValues(newList)
-		end
-
-		function option:Save(data)
-			data.Value = option.Object.Value
-		end
-
-		function option:Load(data)
-			if data.Value ~= nil then
-				option.Object:SetValue(data.Value)
-				option.Value = option.Object.Value
-			end
-		end
-
-		return option
-	end
-
-	--[[ Bind ]]
-
-	adapters.Bind = function(props, api)
-		local option = newOption('Bind', props, api)
-		local callback = props.Function
-		local keys = props.Default or props.Key or {}
-
-		if typeof(keys) == 'string' then
-			keys = {keys}
-		end
-
-		option.Keys = keys
-		option.Hold = props.Hold or false
-		option.Triggered = createSignal()
-
-		-- a keypick attaches to another element, so it hangs off a label inside the
-		-- same groupbox rather than being a groupbox-level element of its own
-		option.Object = api.Groupbox:AddLabel(props.Name)
-		option.KeyPicker = option.Object:AddKeyPicker(option.Name, {
-			Text = props.Name,
-			Default = keys[1] or 'None',
-			Mode = option.Hold and 'Hold' or 'Toggle',
-			Callback = function()
-				local state = option.KeyPicker:GetState()
-
-				option.Triggered:Fire(state)
-
-				if callback then
-					task.spawn(callback, state)
+				if props.Callback then
+					props.Callback(option.Value)
 				end
-			end
-		})
-
-		function option:GetState()
-			return option.KeyPicker:GetState()
-		end
-
-		function option:Save(data)
-			local value = option.KeyPicker.Value
-
-			data.Keys = value and {value} or option.Keys
-			data.Mobile = false
-			data.Hold = option.Hold
-		end
-
-		function option:Load(data)
-			if data.Keys then
-				option.Keys = data.Keys
-				option.KeyPicker:SetValue(data.Keys)
-			end
-
-			if data.Hold ~= nil then
-				option.Hold = data.Hold
-			end
-		end
-
-		return option
-	end
-
-	--[[ ColorSlider ]]
-
-	adapters.ColorSlider = function(props, api)
-		local option = newOption('ColorSlider', props, api)
-		local callback = props.Function
-		local hue = props.Default and (props.Default % 1) or 0
-
-		option.Hue = hue
-		option.Sat = 1
-		option.Value = 1
-		option.Opacity = (props.DefaultOpacity or 100) / 100
-		option.Rainbow = false
-
-		option.Object = api.Groupbox:AddLabel(props.Name, true)
-
-		option.Color = api.Groupbox:AddColorPicker(option.Name, {
-			Text = props.Name,
-			Default = Color3.fromHSV(option.Hue, option.Sat, option.Value),
-			Transparency = option.Opacity,
+			end,
+			Default = selection(props.Default, {Multi = multi}),
+			Multi = multi,
+			Text = props.Text or props.Name,
 			Tooltip = props.Tooltip,
-			Callback = function(color, opacity)
-				option.Hue, option.Sat, option.Value = color:ToHSV()
-
-				if opacity then
-					option.Opacity = opacity
-				end
-
-				if callback then
-					task.spawn(callback, option.Hue, option.Sat, option.Value, option.Opacity)
-				end
-			end
+			Values = list
 		})
+		option.Object.Value = option.Value
 
-		function option:SetValue(h, s, v)
-			option.Hue, option.Sat, option.Value = h, s, v
-			option.Color:SetValue(Color3.fromHSV(h, s, v), option.Opacity)
-		end
+		function option.Change(self, values)
+			local newList = toList(values)
 
-		function option:Save(data)
-			data.Hue = option.Hue
-			data.Sat = option.Sat
-			data.Value = option.Value
-			data.Opacity = option.Opacity
-			data.Rainbow = option.Rainbow
-		end
-
-		function option:Load(data)
-			if data.Hue and data.Sat and data.Value then
-				option.Hue, option.Sat, option.Value = data.Hue, data.Sat, data.Value
-				option.Opacity = data.Opacity or 1
-				option.Rainbow = data.Rainbow or false
-				option.Color:SetValue(Color3.fromHSV(option.Hue, option.Sat, option.Value), option.Opacity)
+			self.List = newList
+			table.clear(self.Options)
+			for _, value in newList do
+				self.Options[value] = value
 			end
+
+			self.Object:SetValues(newList)
+		end
+
+		function option.Clean(self, callback)
+			self.Connections[#self.Connections + 1] = callback
+		end
+
+		function option.Save(self, data)
+			data.Value = self.Value
+		end
+
+		function option.Load(self, data)
+			if type(data) ~= 'table' or data.Value == nil then
+				return
+			end
+
+			self.Object:SetValue(selection(data.Value, {Multi = multi}))
+		end
+
+		for _, value in list do
+			option.Options[value] = value
 		end
 
 		return option
 	end
-
-	--[[ TextBox ]]
 
 	adapters.TextBox = function(props, api)
-		local option = newOption('TextBox', props, api)
-		local callback = props.Function
+		local option = {
+			Connections = {},
+			Name = props.Name,
+			Options = {},
+			Type = 'TextBox',
+			Value = props.Default or ''
+		}
 
-		option.Object = api.Groupbox:AddInput(option.Name, {
-			Text = props.Name,
-			Default = props.Default or '',
-			Placeholder = props.Placeholder or '',
-			Finished = true,
-			Tooltip = props.Tooltip,
+		option.Object = api.Groupbox:AddInput(props.Name, {
 			Callback = function(value)
 				option.Value = value
 
-				if callback then
-					task.spawn(callback, value)
+				if props.Callback then
+					props.Callback(value)
 				end
-			end
+			end,
+			Default = option.Value,
+			Finished = props.Finished,
+			Placeholder = props.Placeholder,
+			Text = props.Text or props.Name,
+			Tooltip = props.Tooltip
 		})
-		option.Value = option.Object.Value
+		option.Object.Value = option.Value
 
-		function option:Save(data)
-			data.Value = option.Object.Value
+		function option.Clean(self, callback)
+			self.Connections[#self.Connections + 1] = callback
 		end
 
-		function option:Load(data)
-			if data.Value ~= nil then
-				option.Object:SetValue(data.Value)
-				option.Value = option.Object.Value
+		function option.Save(self, data)
+			data.Value = self.Object.Value
+		end
+
+		function option.Load(self, data)
+			if type(data) ~= 'table' or data.Value == nil then
+				return
 			end
+
+			option.Object:SetValue(data.Value)
 		end
 
 		return option
 	end
-
-	--[[ Button ]]
 
 	adapters.Button = function(props, api)
-		local option = newOption('Button', props, api)
-		local callback = props.Function
+		local option = {
+			Connections = {},
+			Name = props.Name,
+			Options = {},
+			Type = 'Button'
+		}
 
-		option.Object = api.Groupbox:AddButton(option.Name, {
-			Text = props.Name,
-			Tooltip = props.Tooltip,
+		option.Object = api.Groupbox:AddButton(props.Name, {
 			Callback = function()
-				if callback then
-					task.spawn(callback)
+				if props.Callback then
+					props.Callback()
 				end
-			end
+			end,
+			Text = props.Text or props.Name,
+			Tooltip = props.Tooltip
 		})
 
+		function option.Clean(self, callback)
+			self.Connections[#self.Connections + 1] = callback
+		end
+
+		function option.Save() end
+
+		function option.Load() end
+
 		return option
 	end
-
-	--[[ Divider ]]
 
 	adapters.Divider = function(props, api)
-		local option = newOption('Divider', props, api)
+		local option = {
+			Connections = {},
+			Name = props.Name,
+			Options = {},
+			Type = 'Divider'
+		}
 
-		option.Object = api.Groupbox:AddLabel(props.Text or props.Name or '', true)
+		local text = props.Text or props.Name
+		if api.Groupbox.AddDivider then
+			option.Object = api.Groupbox:AddDivider(text)
+		else
+			option.Object = api.Groupbox:AddLabel(text)
+		end
+
+		function option.Clean(self, callback)
+			self.Connections[#self.Connections + 1] = callback
+		end
+
+		function option.Save() end
+
+		function option.Load() end
 
 		return option
 	end
 
-	--[[ Targets — four toggles, saved under the hardcoded key the profile expects ]]
+	adapters.Bind = function(props, api)
+		local option = {
+			Connections = {},
+			Hold = props.Hold == true,
+			Keys = toKeys(props.Default),
+			Mobile = props.Mobile == true,
+			Name = props.Name,
+			Options = {},
+			Triggered = createSignal(),
+			Type = 'Bind'
+		}
+
+		local label = api.Groupbox:AddLabel(props.Name)
+		local mode = props.Mode or (option.Hold and 'Hold' or 'Toggle')
+
+		option.Object = label:AddKeyPicker(props.Name, {
+			Callback = function(state)
+				option.Triggered:Fire(state == true)
+			end,
+			Default = option.Keys[1] or 'None',
+			Mode = mode,
+			SyncToggleState = props.SyncToggleState,
+			Text = props.Text or props.Name
+		})
+
+		option.Hold = mode == 'Hold'
+
+		function option.Clean(self, callback)
+			self.Connections[#self.Connections + 1] = callback
+		end
+
+		function option.Save(self, data)
+			data.Hold = self.Hold
+			data.Keys = toKeys(self.Keys)
+			data.Mobile = self.Mobile
+		end
+
+		function option.Load(self, data)
+			if type(data) ~= 'table' then
+				return
+			end
+
+			if data.Keys ~= nil then
+				option.Keys = toKeys(data.Keys)
+				option.Object:SetValue({option.Keys[1] or 'None', option.Object.Mode or mode})
+			end
+
+			if type(data.Mobile) == 'boolean' then
+				option.Mobile = data.Mobile
+			end
+
+			if type(data.Hold) == 'boolean' then
+				option.Hold = data.Hold
+				if option.Object.SetMode then
+					option.Object:SetMode(option.Hold and 'Hold' or 'Toggle')
+				end
+			end
+		end
+
+		return option
+	end
+
+	adapters.ColorSlider = function(props, api)
+		local color = defaultColor(props.Default)
+		local hue, sat, value = color:ToHSV()
+
+		local option = {
+			Connections = {},
+			Hue = hue,
+			Name = props.Name,
+			Opacity = props.Transparency or 0,
+			Options = {},
+			Rainbow = props.Rainbow == true,
+			Sat = sat,
+			Type = 'ColorSlider',
+			Value = value
+		}
+
+		local label = api.Groupbox:AddLabel(props.Name, true)
+
+		option.Object = label:AddColorPicker(props.Name, {
+			Callback = function(selection, transparency)
+				local h, s, v = selection:ToHSV()
+
+				option.Hue = h
+				option.Sat = s
+				option.Value = v
+				option.Opacity = transparency or option.Opacity
+				option.Rainbow = false
+
+				if props.Callback then
+					props.Callback(h, s, v, option.Opacity)
+				end
+			end,
+			Default = color,
+			Text = props.Text or props.Name,
+			Tooltip = props.Tooltip,
+			Transparency = option.Opacity
+		})
+
+		function option.SetValue(self, h, s, v)
+			self.Hue = h
+			self.Sat = s
+			self.Value = v
+
+			if self.Object then
+				self.Object:SetValue(Color3.fromHSV(h, s, v))
+			end
+		end
+
+		function option.Clean(self, callback)
+			self.Connections[#self.Connections + 1] = callback
+		end
+
+		function option.Save(self, data)
+			data.Hue = self.Hue
+			data.Opacity = self.Opacity
+			data.Rainbow = self.Rainbow
+			data.Sat = self.Sat
+			data.Value = self.Value
+		end
+
+		function option.Load(self, data)
+			if type(data) ~= 'table' then
+				return
+			end
+
+			local h = type(data.Hue) == 'number' and data.Hue or option.Hue
+			local s = type(data.Sat) == 'number' and data.Sat or option.Sat
+			local v = type(data.Value) == 'number' and data.Value or option.Value
+
+			option.Opacity = type(data.Opacity) == 'number' and data.Opacity or option.Opacity
+			option.Rainbow = data.Rainbow == true
+			option:SetValue(h, s, v)
+
+			if props.Callback then
+				props.Callback(h, s, v, option.Opacity)
+			end
+		end
+
+		return option
+	end
 
 	adapters.Targets = function(props, api)
-		local option = newOption('Targets', props, api)
+		local option = {
+			Connections = {},
+			Name = 'Targets',
+			Options = {},
+			Type = 'Targets'
+		}
 
-		option.Players = adapters.Toggle({Name = 'Players', Default = props.Players ~= false}, api)
-		option.NPCs = adapters.Toggle({Name = 'NPCs', Default = props.NPCs ~= false}, api)
-		option.Walls = adapters.Toggle({Name = 'Walls', Default = props.Walls or false}, api)
+		local children = {}
 
-		function option:Save(data)
-			option.Players:Save(data.Players or {})
-			option.NPCs:Save(data.NPCs or {})
-			option.Walls:Save(data.Walls or {})
+		for _, kind in {'Players', 'NPCs', 'Walls'} do
+			children[kind] = adapters.Toggle({
+				Callback = function(state)
+					if props[kind .. 'Callback'] then
+						props[kind .. 'Callback'](state)
+					end
+					if props.Callback then
+						props.Callback(kind, state)
+					end
+				end,
+				Default = props[kind] == true,
+				Name = kind,
+				Text = kind
+			}, api)
 		end
 
-		function option:Load(data)
-			if data.Players then option.Players:Load(data.Players) end
-			if data.NPCs then option.NPCs:Load(data.NPCs) end
-			if data.Walls then option.Walls:Load(data.Walls) end
+		local first = children.Players
+		option.Object = first.Object
+		option.Enabled = first.Enabled
+
+		function option.Clean(self, callback)
+			self.Connections[#self.Connections + 1] = callback
+		end
+
+		function option.Save(self, data)
+			data.NPCs = children.NPCs.Object.Value
+			data.Players = children.Players.Object.Value
+			data.Walls = children.Walls.Object.Value
+		end
+
+		function option.Load(self, data)
+			if type(data) ~= 'table' then
+				return
+			end
+
+			for _, kind in {'Players', 'NPCs', 'Walls'} do
+				if type(data[kind]) == 'boolean' then
+					children[kind].Object:SetValue(data[kind])
+				end
+			end
 		end
 
 		return option
 	end
-
-	--[[ TwoSlider — no dual-handle control exists, so two sliders back one option ]]
 
 	adapters.TwoSlider = function(props, api)
-		local option = newOption('TwoSlider', props, api)
+		local option = {
+			Connections = {},
+			Name = props.Name,
+			Options = {},
+			Type = 'TwoSlider',
+			ValueMax = props.DefaultMax or props.Max,
+			ValueMin = props.DefaultMin or props.Min
+		}
 
-		option.Min = adapters.Slider({
-			Name = props.Name..' Min',
-			Default = props.DefaultMin or props.Min,
-			Min = props.Min,
+		local childProps = {
 			Max = props.Max,
-			Decimal = props.Decimal
-		}, api)
-		option.Max = adapters.Slider({
-			Name = props.Name..' Max',
-			Default = props.DefaultMax or props.Max,
 			Min = props.Min,
-			Max = props.Max,
-			Decimal = props.Decimal
-		}, api)
+			Prefix = props.Prefix,
+			Rounding = props.Rounding,
+			Suffix = props.Suffix,
+			Tooltip = props.Tooltip
+		}
 
-		function option:Save(data)
-			data.ValueMin = option.Min.Object.Value
-			data.ValueMax = option.Max.Object.Value
+		local minimum = {}
+		for key, value in childProps do
+			minimum[key] = value
+		end
+		minimum.Default = option.ValueMin
+		minimum.Name = props.Name .. 'Min'
+		minimum.Text = (props.Text or props.Name) .. ' Min'
+		minimum.Callback = function(value)
+			option.ValueMin = value
+			if props.Callback then
+				props.Callback(option.ValueMin, option.ValueMax)
+			end
 		end
 
-		function option:Load(data)
-			if data.ValueMin ~= nil then option.Min.Object:SetValue(data.ValueMin) end
-			if data.ValueMax ~= nil then option.Max.Object:SetValue(data.ValueMax) end
+		local maximum = {}
+		for key, value in childProps do
+			maximum[key] = value
+		end
+		maximum.Default = option.ValueMax
+		maximum.Name = props.Name .. 'Max'
+		maximum.Text = (props.Text or props.Name) .. ' Max'
+		maximum.Callback = function(value)
+			option.ValueMax = value
+			if props.Callback then
+				props.Callback(option.ValueMin, option.ValueMax)
+			end
+		end
+
+		option.Min = adapters.Slider(minimum, api)
+		option.Max = adapters.Slider(maximum, api)
+		option.Object = option.Min.Object
+		option.Enabled = option.Min.Enabled
+
+		function option.Clean(self, callback)
+			self.Connections[#self.Connections + 1] = callback
+		end
+
+		function option.Save(self, data)
+			data.ValueMax = self.Max.Object.Value
+			data.ValueMin = self.Min.Object.Value
+		end
+
+		function option.Load(self, data)
+			if type(data) ~= 'table' then
+				return
+			end
+
+			if type(data.ValueMin) == 'number' then
+				option.Min.Object:SetValue(data.ValueMin)
+			end
+
+			if type(data.ValueMax) == 'number' then
+				option.Max.Object:SetValue(data.ValueMax)
+			end
 		end
 
 		return option
 	end
 
-	--[[ Module ]]
+	--[[ containers ]]
 
-	function adapters.CreateModule(category, props)
+	local OPTION_CREATORS = {
+		Bind = 'CreateBind',
+		Button = 'CreateButton',
+		ColorSlider = 'CreateColorSlider',
+		Divider = 'CreateDivider',
+		Dropdown = 'CreateDropdown',
+		Slider = 'CreateSlider',
+		Targets = 'CreateTargets',
+		TextBox = 'CreateTextBox',
+		Toggle = 'CreateToggle',
+		TwoSlider = 'CreateTwoSlider'
+	}
+
+	-- the profile expects `Options` to be keyed by option name, each entry holding
+	-- whatever that option's own Save wrote ({Enabled}, {Value, Max}, {Hue, ...})
+	local function optionsToData(host)
+		local data = {}
+
+		for name, option in pairs(host.Options) do
+			if option.Save then
+				local entry = {}
+
+				option:Save(entry)
+				data[name] = entry
+			end
+		end
+
+		return data
+	end
+
+	local function optionsFromData(host, data)
+		for name, entry in pairs(data) do
+			local option = host.Options[name]
+
+			if option and option.Load and type(entry) == 'table' then
+				option:Load(entry)
+			end
+		end
+	end
+
+	local function addOption(host, kind, props)
+		local name = props.Name or props.Text or kind
+
+		if props.Type == 'Bind' then
+			kind = 'Bind'
+		elseif props.Type == 'ColorSlider' then
+			kind = 'ColorSlider'
+		end
+
+		local create = adapters[kind]
+		if not create then
+			notify('Vape', 'Unknown option type ' .. tostring(kind), 5, 'warning')
+			return nil
+		end
+
+		local option = create(props, {Groupbox = host.Groupbox})
+		if option and option ~= true then
+			option.Type = option.Type or kind
+			host.Options[name] = option
+		end
+
+		return option
+	end
+
+	local function installCreators(target)
+		for kind, method in OPTION_CREATORS do
+			target[method] = function(self, props)
+				return addOption(self, kind, props or {})
+			end
+		end
+	end
+
+	adapters.CreateModule = function(category, props)
 		vape:Remove(props.Name)
 
 		local module = {
-			Category = category.Name,
+			Category = category,
+			Connections = {},
 			Enabled = false,
-			Index = #vape.Modules,
+			ExtraText = props.ExtraText,
+			Index = props.Index or 1,
 			Name = props.Name,
 			Options = {},
-			Connections = {},
-			Visible = true
+			Type = 'Module',
+			Visible = props.Visible ~= false
 		}
 
-		addMaid(module)
+		module.Object = category.Groupbox:AddToggle(props.Name, {
+			Callback = function(state)
+				if module.Enabled == state then
+					return
+				end
 
-		-- the module's options live in this box, shown only while the toggle is on
-		module.Groupbox = category.Groupbox:AddDependencyBox()
+				module.Enabled = state
 
-		function module:Toggle()
-			local next = not module.Object.Value
+				local connections = module.Connections
+				module.Connections = {}
 
-			module.Object:SetValue(next)
-			module.Enabled = next
-		end
-
-		function module:Clean(callback)
-			module.Connections[#module.Connections + 1] = callback
-		end
-
-		module.Object = category.Groupbox:AddToggle(module.Name, {
-			Text = props.Name,
-			Default = false,
-			Tooltip = props.Tooltip,
-			Callback = function(value)
-				module.Enabled = value
-
-				if not value then
-					for _, connection in module.Connections do
+				for _, connection in connections do
+					pcall(function()
 						connection:Disconnect()
-					end
-
-					table.clear(module.Connections)
+					end)
 				end
 
 				if props.Function then
-					task.spawn(props.Function, value)
+					task.spawn(props.Function, state)
 				end
-			end
+
+				if props.Callback then
+					props.Callback(state)
+				end
+			end,
+			Default = false,
+			Text = props.Name,
+			Tooltip = props.Tooltip
 		})
 
-		module.Groupbox:SetupDependencies({
+		module.OptionsGroupbox = category.Groupbox:AddDependencyBox()
+		module.OptionsGroupbox:SetupDependencies({
 			{module.Object, true}
 		})
 
-		function module:Save(data)
-			data.Enabled = module.Object.Value
-			data.Visible = true
-			data.Options = data.Options or {}
+		local dependency = {Groupbox = module.OptionsGroupbox, Options = module.Options}
 
-			for name, option in module.Options do
-				if option.Save then
-					local optionData = data.Options[name] or {}
-
-					option:Save(optionData)
-					data.Options[name] = optionData
-				end
+		for kind, method in OPTION_CREATORS do
+			module[method] = function(self, optionProps)
+				return addOption(dependency, kind, optionProps or {})
 			end
 		end
 
-		function module:Load(data)
-			if data.Options then
-				for name, optionData in data.Options do
-					local option = module.Options[name]
+		function module.Toggle(self)
+			self.Object:SetValue(not self.Object.Value)
+		end
 
-					if option and option.Load then
-						option:Load(optionData)
-					end
+		function module.Clean(self, connection)
+			self.Connections[#self.Connections + 1] = connection
+		end
+
+		function module.Save(self, data)
+			self.Options.Bind = self.Options.Bind or {
+				Clean = function() end,
+				Load = function() end,
+				Save = function(_, values)
+					values.Hold = false
+					values.Keys = {}
+					values.Mobile = false
 				end
+			}
+
+			local bind = self.Options.Bind
+			bind:Save(data)
+
+			data.Enabled = self.Object.Value
+			data.Options = optionsToData(self)
+			data.Visible = self.Visible
+		end
+
+		function module.Load(self, data)
+			if type(data) ~= 'table' then
+				return
 			end
 
-			if data.Enabled ~= nil then
+			if type(data.Visible) == 'boolean' then
+				module.Visible = data.Visible
+			end
+
+			if type(data.Options) == 'table' then
+				optionsFromData(module, data.Options)
+			end
+
+			if module.Options.Bind and type(data.Bind) == 'table' then
+				module.Options.Bind:Load(data.Bind)
+			end
+
+			if type(data.Enabled) == 'boolean' and data.Enabled ~= module.Object.Value then
 				module.Object:SetValue(data.Enabled)
-			end
-		end
-
-		for _, kind in ipairs({
-			'Toggle',
-			'Slider',
-			'Dropdown',
-			'Bind',
-			'ColorSlider',
-			'TextBox',
-			'Button',
-			'Divider',
-			'Targets',
-			'TwoSlider',
-			'TextList',
-			'ImageToggle',
-			'Font'
-		}) do
-			module['Create'..kind] = function(_, optionProps)
-				local adapter = adapters[kind] or adapters.Toggle
-				local option = adapter(optionProps, module)
-
-				if option then
-					module.Options[optionProps.Name or kind] = option
-				end
-
-				return option
 			end
 		end
 
@@ -17307,274 +17865,562 @@ function vape:LoadGUI()
 		return module
 	end
 
-	--[[ Category ]]
-
-	function adapters.CreateCategory(props)
-		local tab = props.Tab
-
+	adapters.CreateCategory = function(props)
 		local category = {
-			Name = props.Name,
-			Type = 'Category',
+			Connections = {},
+			Groupbox = nil,
 			Modules = {},
-			Tab = tab,
-			Groupbox = tab:AddLeftGroupbox(props.Name)
+			Name = props.Name,
+			Options = {},
+			Tab = props.Tab,
+			Type = 'Category'
 		}
 
-		addMaid(category)
+		local side = props.Side or 'Left'
+		category.Groupbox = props.Tab:AddGroupbox({
+			Name = props.Text or props.Name,
+			Side = side
+		})
 
-		function category:CreateModule(moduleProps)
-			return adapters.CreateModule(category, moduleProps)
+		function category.CreateModule(self, moduleProps)
+			local module = adapters.CreateModule(self, moduleProps)
+			table.insert(self.Modules, module)
+
+			return module
 		end
 
-		function category:Save(data)
-			data.Name = category.Name
+		function category.Clean(self, connection)
+			self.Connections[#self.Connections + 1] = connection
 		end
 
-		function category:Load() end
+		function category.Save(self, data)
+			data.Name = self.Name
+			data.Options = optionsToData(self)
+		end
 
-		vape.Categories[props.Name] = category
+		function category.Load(self, data)
+			if type(data) ~= 'table' or type(data.Options) ~= 'table' then
+				return
+			end
+
+			optionsFromData(category, data.Options)
+		end
+
+		installCreators(category)
+		vape.Categories[category.Name] = category
 
 		return category
 	end
 
-	--[[ Settings pane ]]
-
-	function adapters.CreatePane(props)
-		local groupbox = props.Tab:AddGroupbox({
+	adapters.CreatePane = function(props)
+		local pane = {
+			Groupbox = nil,
 			Name = props.Name,
+			Options = {},
+			Tab = props.Tab,
+			Type = 'Pane'
+		}
+
+		pane.Groupbox = props.Tab:AddGroupbox({
+			Name = props.Text or props.Name,
 			Side = props.Side or 'Left'
 		})
 
-		local pane = {
-			Name = props.Name,
-			Type = 'Pane',
-			Options = {},
-			Groupbox = groupbox
-		}
-
-		addMaid(pane)
-
-		for _, kind in ipairs({'Toggle', 'Slider', 'Dropdown', 'Bind', 'ColorSlider', 'TextBox', 'Button', 'Divider', 'TwoSlider'}) do
-			pane['Create'..kind] = function(_, optionProps)
-				local adapter = adapters[kind] or adapters.Toggle
-				local option = adapter(optionProps, pane)
-
-				if option then
-					pane.Options[optionProps.Name or kind] = option
-				end
-
-				return option
-			end
-		end
+		installCreators(pane)
+		vape.Categories[pane.Name] = pane
 
 		return pane
 	end
 
-	--[[ Friends / Targets / Profiles lists ]]
-
-	function adapters.CreateCategoryList(props)
-		local tab = vape.Window:AddTab({
-			Name = props.Name,
-			Order = #vape.Categories + 8
-		})
-
-		local groupbox = tab:AddLeftGroupbox(props.Name)
-
+	adapters.CreateCategoryList = function(props)
 		local component = {
-			Name = props.Name,
-			Type = 'CategoryList',
+			Groupbox = nil,
 			List = {},
 			ListEnabled = {},
+			Name = props.Name,
 			Options = {},
-			Groupbox = groupbox,
+			Type = 'TextList',
 			Update = Instance.new('BindableEvent')
 		}
 
-		addMaid(component)
+		component.Groupbox = props.Tab and props.Tab:AddGroupbox({
+			Name = props.Text or props.Name,
+			Side = props.Side or 'Right'
+		}) or {}
 
-		component.Object = groupbox
+		component.ListObject = component.Groupbox and component.Groupbox:AddDropdown(props.Name .. 'List', {
+			Callback = function(value)
+				if component.Refreshing then
+					return
+				end
 
-		if props.Player then
-			component.List_ = groupbox:AddDropdown('List', {
-				Text = 'Players',
-				Values = {},
-				Multi = true,
-				AllowNull = true,
-				SpecialType = 'Player',
-				ExcludeLocalPlayer = true,
-				Callback = function(values)
-					component.ListEnabled = {}
+				component.ListEnabled = toList(value)
 
-					for name in values do
-						component.ListEnabled[#component.ListEnabled + 1] = name
+				if props.Callback then
+					props.Callback(component.ListEnabled)
+				end
+
+				component.Update:Fire()
+			end,
+			Multi = true,
+			SpecialType = props.SpecialType or 'Player',
+			Text = props.Text or props.Name,
+			Values = {}
+		}) or nil
+
+		if component.Groupbox and props.Options then
+			for key, option in props.Options do
+				local name = option.Name or option.Text or key
+				local copy = {}
+				for field, value in option do
+					copy[field] = value
+				end
+				copy.Name = name
+
+				addOption(component, option.Type or 'Toggle', copy)
+
+				if component.Options[name] == nil then
+					component.Options[key] = copy
+				end
+			end
+		end
+
+		function component.GetValue(self, name)
+			if not name then
+				return self.ListEnabled[1], self.ListEnabled[1] ~= nil
+			end
+
+			for _, value in self.ListEnabled do
+				if value == name then
+					return value, true
+				end
+			end
+
+			return nil, false
+		end
+
+		function component.ChangeValue(self, name, skipGUI)
+			local found
+			for index, value in self.ListEnabled do
+				if value == name then
+					found = index
+					break
+				end
+			end
+
+			if found then
+				if props.AllowNull or #self.ListEnabled > 1 then
+					table.remove(self.ListEnabled, found)
+				end
+			else
+				table.insert(self.ListEnabled, name)
+			end
+
+			self.ListEnabled = toList(self.ListEnabled)
+
+			if not skipGUI and self.ListObject then
+				self.ListObject:SetValue(toSet(self.ListEnabled))
+			end
+
+			self.Update:Fire()
+		end
+
+		function component.Save(self, data)
+			data.ListEnabled = toList(self.ListEnabled)
+
+			for key, option in self.Options do
+				option:Save(data)
+			end
+		end
+
+		function component.Load(self, data)
+			if type(data) ~= 'table' then
+				return
+			end
+
+			component.Refreshing = true
+
+			component.ListEnabled = toList(data.ListEnabled)
+
+			if component.ListObject then
+				component.ListObject:SetValue(toSet(component.ListEnabled))
+			end
+
+			for name, option in self.Options do
+				local value = data[name]
+
+				if value == nil then
+					for key, candidate in data do
+						if type(candidate) == 'table' and (candidate.Name == name or key == option.Name) then
+							value = candidate
+							break
+						end
 					end
-
-					component.Update:Fire()
-				end
-			})
-		end
-
-		if props.Options then
-			for key, optionProps in props.Options do
-				component.Options[optionProps.Name] = adapters.Toggle(optionProps, component)
-			end
-		end
-
-		function component:GetValue(name)
-			return table.find(component.ListEnabled, name)
-		end
-
-		function component:ChangeValue(name, skipGUI)
-			table.insert(component.ListEnabled, name)
-
-			if not skipGUI and component.List_ then
-				component.List_:SetValue({[name] = true})
-			end
-		end
-
-		function component:Save(data)
-			data.List = component.List
-			data.ListEnabled = component.ListEnabled
-			data.Options = {}
-
-			for name, option in component.Options do
-				data.Options[name] = {}
-				option:Save(data.Options[name])
-			end
-		end
-
-		function component:Load(data)
-			component.List = data.List or {}
-			component.ListEnabled = data.ListEnabled or {}
-
-			if component.List_ then
-				local values = {}
-
-				for _, name in component.ListEnabled do
-					values[name] = true
 				end
 
-				component.List_:SetValue(values)
+				if value ~= nil then
+					option:Load(value)
+				end
 			end
 
-			if data.Options then
-				for name, optionData in data.Options do
-					local option = component.Options[name]
+			component.Refreshing = nil
+			component.Update:Fire()
+		end
 
-					if option and option.Load then
-						option:Load(optionData)
-					end
-				end
+		local wrapper = {}
+		local passthrough = {'AddButton', 'AddDivider', 'AddDropdown', 'AddInput', 'AddLabel', 'AddSlider', 'AddToggle'}
+		for _, method in passthrough do
+			wrapper[method] = function(_, ...)
+				return component.Groupbox[method](component.Groupbox, ...)
 			end
 		end
 
-		vape.Categories[props.Name] = component
+		for kind, method in OPTION_CREATORS do
+			component[method] = function(self, optionProps)
+				return addOption({Groupbox = wrapper, Options = self.Options}, kind, optionProps or {})
+			end
+		end
+		vape.Categories[component.Name] = component
 
 		return component
 	end
 
-	-- base.lua declared `components` above this slot and init.lua reads it next
+	-- base.lua's vape:CreateCategory / CreateCategoryList / CreateOverlay call
+	-- components.Category(...) / CategoryList(...) / Overlay(...), so the adapter
+	-- factories are exposed under those names too
+	adapters.Category = function(props)
+		return adapters.CreateCategory(props)
+	end
+
+	adapters.CategoryList = function(props)
+		return adapters.CreateCategoryList(props)
+	end
+
+	-- Obsidian has no floating overlay panel of the shape Vape's overlay needs, so
+	-- this keeps the contract (a table with Object/Options and a destroy path)
+	-- while leaving the drawing to the module that asks for it
+	adapters.Overlay = function(props)
+		local overlay = {
+			Name = props.Name,
+			Options = {},
+			Type = 'Overlay',
+			Visible = true
+		}
+
+		addMaid(overlay)
+
+		overlay.Button = {
+			Enabled = false,
+			Toggle = function(self)
+				self.Enabled = not self.Enabled
+			end
+		}
+
+		function overlay:Save(data)
+			data.Name = self.Name
+		end
+
+		function overlay:Load() end
+
+		function overlay:Destroy() end
+
+		if props.Tab then
+			overlay.Groupbox = props.Tab:AddLeftGroupbox(props.Name)
+		end
+
+		for kind, method in OPTION_CREATORS do
+			overlay[method] = function(self, optionProps)
+				return addOption({Groupbox = overlay.Groupbox, Options = self.Options}, kind, optionProps or {})
+			end
+		end
+
+		vape.Categories[props.Name] = overlay
+
+		return overlay
+	end
+
 	components = adapters
 
 
-	--[[
-		Obsidian window.
-
-		The body of vape:LoadGUI(). Same categories, same friends/targets/profiles
-		lists and the same settings panes the Vape GUI has, drawn with Obsidian:
-		category -> Tab, module -> toggle, a module's options -> dependency box.
-
-		`components` is ObsidianCompat.lua. It keeps the profile shapes and the field
-		names the game modules read (`ListEnabled`, `Options['Use friends']`, …), so
-		existing `newvape/profiles/*.txt` files still load.
-	]]
-
 	addMaid(vape)
+	gui = Instance.new('ScreenGui')
+	gui.Name = randomString()
+	gui.DisplayOrder = 9999999
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+	gui.IgnoreGuiInset = true
 
-	vape.Window = Library:CreateWindow({
-		Title = 'Inhaler',
-		Footer = 'v'..vape.Version,
-		NotifySide = 'Right',
-		ShowCustomCursor = false,
-		DisableSearch = false
-	})
-
-	gui = vape.Window.GuiElement
+	if vape.ThreadFix then
+		local holder = Instance.new('Folder')
+		holder.Parent = cloneref(game:GetService('CoreGui'))
+		gui.OnTopOfCoreBlur = true
+		gui.Parent = (gethui and gethui()) or cloneref(game:GetService('CoreGui'))
+		vape.holder = holder
+	else
+		gui.Parent = cloneref(game:GetService('Players')).LocalPlayer.PlayerGui
+		gui.ResetOnSpawn = false
+		vape.holder = gui
+	end
 	vape.gui = gui
 
+	scaledgui = Instance.new('Frame')
+	scaledgui.BackgroundTransparency = 1
+	scaledgui.Name = 'ScaledGui'
+	scaledgui.Size = UDim2.fromScale(1, 1)
+	scaledgui.Parent = gui
+	clickgui = Instance.new('Frame')
+	clickgui.BackgroundTransparency = 1
+	clickgui.Name = 'ClickGui'
+	clickgui.Size = UDim2.fromScale(1, 1)
+	clickgui.Visible = false
+	clickgui.Parent = scaledgui
+	local scarcitybanner = Instance.new('TextLabel')
+	scarcitybanner.BackgroundTransparency = 1
+	scarcitybanner.FontFace = uipallet.Font
+	scarcitybanner.Position = UDim2.fromScale(0, 0.97)
+	scarcitybanner.Size = UDim2.fromScale(1, 0.018)
+	scarcitybanner.Text = 'Join Inhaler V4 Discord server at https://discord.gg/YSzD7f9neR'
+	scarcitybanner.TextColor3 = Color3.new(1, 1, 1)
+	scarcitybanner.TextScaled = true
+	scarcitybanner.TextStrokeTransparency = 0.5
+	scarcitybanner.Parent = clickgui
+	local modal = Instance.new('TextButton')
+	modal.BackgroundTransparency = 1
+	modal.Modal = true
+	modal.Text = ''
+	modal.Parent = clickgui
+	local cursor = Instance.new('ImageLabel')
+	cursor.BackgroundTransparency = 1
+	cursor.Image = 'rbxasset://textures/Cursors/KeyboardMouse/ArrowFarCursor.png'
+	cursor.Size = UDim2.fromOffset(64, 64)
+	cursor.Visible = false
+	cursor.Parent = gui
+	notifications = Instance.new('Folder')
+	notifications.Name = 'Notifications'
+	notifications.Parent = scaledgui
+	tooltip = Instance.new('TextLabel')
+	tooltip.BackgroundColor3 = color.Dark(uipallet.Main, 0.02)
+	tooltip.FontFace = uipallet.Font
+	tooltip.Position = UDim2.fromScale(-1, -1)
+	tooltip.RichText = true
+	tooltip.Text = ''
+	tooltip.TextColor3 = color.Dark(uipallet.Text, 0.16)
+	tooltip.TextSize = 12
+	tooltip.Visible = false
+	tooltip.ZIndex = 5
+	tooltip.Parent = scaledgui
+	toolblur = addBlur(tooltip)
+	addCorner(tooltip)
+	scale = Instance.new('UIScale')
+	scale.Scale = math.max(gui.AbsoluteSize.X / 1920, 0.6)
+	scale.Parent = scaledgui
+	scaledgui.Size = UDim2.fromScale(1 / scale.Scale, 1 / scale.Scale)
+	components.GUI({})
+
+	vape:CreateCategory({
+		Name = 'Combat',
+		Icon = getvapeasset('newvape/assets/new/combat.png'),
+		Size = UDim2.fromOffset(13, 14)
+	})
+	vape:CreateCategory({
+		Name = 'Blatant',
+		Icon = getvapeasset('newvape/assets/new/blatant.png'),
+		Size = UDim2.fromOffset(14, 14)
+	})
+	vape:CreateCategory({
+		Name = 'Render',
+		Icon = getvapeasset('newvape/assets/new/render.png'),
+		Size = UDim2.fromOffset(15, 14)
+	})
+	vape:CreateCategory({
+		Name = 'Utility',
+		Icon = getvapeasset('newvape/assets/new/utility.png'),
+		Size = UDim2.fromOffset(15, 14)
+	})
+	vape:CreateCategory({
+		Name = 'World',
+		Icon = getvapeasset('newvape/assets/new/world.png'),
+		Size = UDim2.fromOffset(14, 14)
+	})
+	vape:CreateCategory({
+		Name = 'Inventory',
+		Icon = getvapeasset('newvape/assets/new/inventory.png'),
+		Size = UDim2.fromOffset(15, 14)
+	})
+	vape.Categories.Main:CreateDivider({
+		Text = 'misc'
+	})
+
 	--[[
-		Categories
+		Friends
 	]]
+	do
+		local friends
+		local friendscolor = {
+			Hue = 1,
+			Sat = 1,
+			Value = 1
+		}
 
-	local categoryNames = {'Combat', 'Blatant', 'Render', 'Utility', 'World', 'Inventory'}
-
-	for index, name in categoryNames do
-		local tab = vape.Window:AddTab({
-			Name = name,
-			Order = index
+		friends = vape:CreateCategoryList({
+			Name = 'Friends',
+			Icon = getvapeasset('newvape/assets/new/friends.png'),
+			Size = UDim2.fromOffset(17, 16),
+			Placeholder = 'Roblox username',
+			Color = Color3.fromRGB(5, 134, 105),
+			Player = true,
+			Function = function()
+				friends.Update:Fire()
+				friends.ColorUpdate:Fire(friendscolor.Hue, friendscolor.Sat, friendscolor.Value)
+			end
 		})
-
-		vape.Categories[name] = components.CreateCategory({
-			Name = name,
-			Tab = tab
+		friends.Update = Instance.new('BindableEvent')
+		friends.ColorUpdate = Instance.new('BindableEvent')
+		friends:CreateToggle({
+			Name = 'Recolor visuals',
+			Darker = true,
+			Default = true,
+			Function = function()
+				friends.Update:Fire()
+				friends.ColorUpdate:Fire(friendscolor.Hue, friendscolor.Sat, friendscolor.Value)
+			end
 		})
+		friendscolor = friends:CreateColorSlider({
+			Name = 'Friends color',
+			Darker = true,
+			Function = function(hue, sat, val)
+				for _, v in friends.Object.Children:GetChildren() do
+					local dot = v:FindFirstChild('Dot')
+					if dot and dot.BackgroundColor3 ~= color.Light(uipallet.Main, 0.37) then
+						dot.BackgroundColor3 = Color3.fromHSV(hue, sat, val)
+						dot.Dot.BackgroundColor3 = dot.BackgroundColor3
+					end
+				end
+
+				friends.ColorUpdate:Fire(hue, sat, val)
+			end
+		})
+		friends:CreateToggle({
+			Name = 'Use friends',
+			Darker = true,
+			Default = true,
+			Function = function()
+				friends.Update:Fire()
+				friends.ColorUpdate:Fire(friendscolor.Hue, friendscolor.Sat, friendscolor.Value)
+			end
+		})
+		vape:Clean(friends.Update)
+		vape:Clean(friends.ColorUpdate)
 	end
 
 	--[[
-		Friends, Targets, Profiles
+		Profiles
 	]]
-
-	components.CreateCategoryList({
-		Name = 'Friends',
-		Options = {
-			UseFriends = {Name = 'Use friends', Default = true},
-			Recolor = {Name = 'Recolor visuals', Default = true}
-		}
-	})
-
-	components.CreateCategoryList({
-		Name = 'Targets'
-	})
-
-	components.CreateCategoryList({
+	vape:CreateCategoryList({
 		Name = 'Profiles',
+		Icon = getvapeasset('newvape/assets/new/profiles.png'),
+		Size = UDim2.fromOffset(17, 10),
+		Position = UDim2.fromOffset(12, 16),
+		Placeholder = 'Type name',
 		Profiles = true
 	})
 
 	--[[
-		Settings
+		Targets
 	]]
-
-	local settingsTab = vape.Window:AddTab({
-		Name = 'Settings',
-		Order = #categoryNames + 1
+	local targets
+	targets = vape:CreateCategoryList({
+		Name = 'Targets',
+		Icon = getvapeasset('newvape/assets/new/friends.png'),
+		Size = UDim2.fromOffset(17, 16),
+		Placeholder = 'Roblox username',
+		Player = true,
+		Function = function()
+			targets.Update:Fire()
+		end
 	})
+	targets.Update = Instance.new('BindableEvent')
+	vape:Clean(targets.Update)
 
-	vape.Settings = {}
-
-	local function newPane(name, side)
-		local pane = components.CreatePane({
-			Name = name,
-			Tab = settingsTab,
-			Side = side or 'Left'
-		})
-
-		vape.Settings[name] = pane
-
-		return pane
-	end
+	components.LegitWindow()
+	vape.SearchBar = components.SearchBar()
+	vape.Categories.Main:CreateOverlayBar()
 
 	--[[
-		General
+		General Settings
 	]]
 
-	local general = newPane('General', 'Left')
+	local general = vape.Categories.Main.Settings:CreateSettingsPane({Name = 'General'})
+	local settingConnections = {}
+	vape.MultiKeybind = general:CreateToggle({
+		Name = 'Enable Multi-Keybinding',
+		Tooltip = 'Allows multiple keys to be bound to a module (eg. G + H)'
+	})
+	general:CreateToggle({
+		Name = 'Allow setting keybinds',
+		Function = function(callback)
+			if callback then
+				for _, container in {vape.Modules, vape.Legit.Modules} do
+					for _, module in container do
+						for _, component in module.Options do
+							if component.Type == 'Toggle' then
+								local bind = components.Bind({
+									Module = true
+								}, nil, component)
+								bind.Object.Position = UDim2.new(1, -40, 0, 5)
+
+								table.insert(settingConnections, bind.Triggered:Connect(function(isDown)
+									if bind.Hold then
+										if component.Enabled ~= isDown then
+											if vape.SettingToggleNotifications.Enabled then
+												vape:CreateNotification(module.Name, component.Name..' '..(not component.Enabled and "<font color='#00AA00'>ON</font>" or "<font color='#FF5A5A'>OFF</font>"), 1.5)
+											end
+
+											component:Toggle()
+										end
+									else
+										if vape.SettingToggleNotifications.Enabled then
+											vape:CreateNotification(module.Name, component.Name..' '..(not component.Enabled and "<font color='#00AA00'>ON</font>" or "<font color='#FF5A5A'>OFF</font>"), 1.5)
+										end
+
+										component:Toggle()
+									end
+								end))
+
+								table.insert(settingConnections, component.Object.MouseEnter:Connect(function()
+									bind:SetVisible(true)
+								end))
+
+								table.insert(settingConnections, component.Object.MouseLeave:Connect(function()
+									bind:SetVisible(false)
+								end))
+							end
+						end
+					end
+				end
+			else
+				for _, container in {vape.Modules, vape.Legit.Modules} do
+					for _, module in container do
+						for _, component in module.Options do
+							if component.Bind then
+								component.Bind:Destroy()
+							end
+						end
+					end
+				end
+
+				for _, connection in settingConnections do
+					connection:Disconnect()
+				end
+				table.clear(settingConnections)
+			end
+		end,
+		Tooltip = 'Hover a toggle setting to bind it to a key'
+	})
 
 	general:CreateButton({
 		Name = 'Reset current profile',
 		Function = function()
-			vape.Save = function() end
-
+		vape.Save = function() end
 			if isfile('newvape/profiles/'..vape.Profile..vape.Place..'.txt') and delfile then
 				delfile('newvape/profiles/'..vape.Profile..vape.Place..'.txt')
 			end
@@ -17586,7 +18432,7 @@ function vape:LoadGUI()
 				loadstring(game:HttpGet('https://raw.githubusercontent.com/Night5449791/InhalerObsidianCompiled/'..readfile('newvape/profiles/commit.txt')..'/loader.lua', true))()
 			end
 		end,
-		Tooltip = 'This will set your profile to the default settings'
+		Tooltip = 'This will set your profile to the default settings of Vape'
 	})
 
 	general:CreateButton({
@@ -17594,7 +18440,7 @@ function vape:LoadGUI()
 		Function = function()
 			vape:Uninject()
 		end,
-		Tooltip = 'Removes Inhaler from the current game'
+		Tooltip = 'Removes vape from the current game'
 	})
 
 	general:CreateButton({
@@ -17607,16 +18453,15 @@ function vape:LoadGUI()
 				loadstring(game:HttpGet('https://raw.githubusercontent.com/Night5449791/InhalerObsidianCompiled/'..readfile('newvape/profiles/commit.txt')..'/loader.lua', true))()
 			end
 		end,
-		Tooltip = 'Reloads Inhaler for debugging purposes'
+		Tooltip = 'Reloads vape for debugging purposes'
 	})
 
 	--[[
-		Module settings
+		Module Settings
 	]]
 
-	local modulesPane = newPane('Modules', 'Right')
-
-	modulesPane:CreateToggle({
+	local modules = vape.Categories.Main.Settings:CreateSettingsPane({Name = 'Modules'})
+	modules:CreateToggle({
 		Name = 'Teams by server',
 		Tooltip = 'Ignore players on your team designated by the server',
 		Default = true,
@@ -17627,7 +18472,7 @@ function vape:LoadGUI()
 		end
 	})
 
-	modulesPane:CreateToggle({
+	modules:CreateToggle({
 		Name = 'Use team color',
 		Tooltip = 'Uses the TeamColor property on players for render modules',
 		Default = true,
@@ -17639,12 +18484,78 @@ function vape:LoadGUI()
 	})
 
 	--[[
-		GUI settings
+		GUI Settings
 	]]
 
-	local guiPane = newPane('GUI', 'Left')
+	local guipane = vape.Categories.Main.Settings:CreateSettingsPane({Name = 'GUI'})
+	vape.Blur = guipane:CreateToggle({
+		Name = 'Blur background',
+		Function = function()
+			vape:BlurCheck()
+		end,
+		Default = true,
+		Tooltip = 'Blur the background of the GUI'
+	})
 
-	guiPane:CreateSlider({
+	guipane:CreateToggle({
+		Name = 'GUI bind indicator',
+		Default = true,
+		Tooltip = "Displays a message indicating your GUI upon injecting.\nI.E. 'Press RSHIFT to open GUI'"
+	})
+
+	guipane:CreateToggle({
+		Name = 'Show tooltips',
+		Function = function(enabled)
+			tooltip.Visible = false
+			toolblur.Enabled = enabled
+		end,
+		Default = true,
+		Tooltip = 'Toggles visibility of these'
+	})
+
+	guipane:CreateToggle({
+		Name = 'Show legit mode',
+		Function = function(enabled)
+			clickgui.Search.Legit.Visible = enabled
+			clickgui.Search.LegitDivider.Visible = enabled
+			clickgui.Search.TextBox.Size = UDim2.new(1, enabled and -50 or -10, 0, 37)
+			clickgui.Search.TextBox.Position = UDim2.fromOffset(enabled and 50 or 10, 0)
+		end,
+		Default = true,
+		Tooltip = 'Shows the button to switch to the legit mod menu'
+	})
+
+	local ScaleSlider = {Object = {}, Value = 1}
+	vape.Scale = guipane:CreateToggle({
+		Name = 'Auto rescale',
+		Default = true,
+		Function = function(callback)
+			ScaleSlider.Object.Visible = not callback
+			if callback then
+				--scale.Scale = math.max(gui.AbsoluteSize.X / 1920, 0.6)
+			else
+				scale.Scale = ScaleSlider.Value
+			end
+		end,
+		Tooltip = 'Automatically rescales the gui using the screens resolution'
+	})
+
+	ScaleSlider = guipane:CreateSlider({
+		Name = 'Scale',
+		Min = 0.1,
+		Max = 2,
+		Decimal = 10,
+		Function = function(val, final)
+			if final and not vape.Scale.Enabled then
+				scale.Scale = val
+			end
+		end,
+		Default = 1,
+		Darker = true,
+		Visible = false
+	})
+
+	vape.RainbowSpeed = guipane:CreateSlider({
 		Name = 'Rainbow speed',
 		Min = 0.1,
 		Max = 10,
@@ -17653,7 +18564,7 @@ function vape:LoadGUI()
 		Tooltip = 'Adjusts the speed of rainbow values'
 	})
 
-	guiPane:CreateSlider({
+	vape.RainbowUpdateSpeed = guipane:CreateSlider({
 		Name = 'Rainbow update rate',
 		Min = 1,
 		Max = 144,
@@ -17662,60 +18573,280 @@ function vape:LoadGUI()
 		Suffix = 'hz'
 	})
 
-	vape.RainbowMode = guiPane:CreateDropdown({
+	--[[guipane:CreateDropdown({
+		Name = 'GUI Theme',
+		List = inputService.TouchEnabled and {'new', 'old'} or {'new', 'old', 'rise'},
+		Function = function(val, mouse)
+			if mouse then
+				writefile('newvape/profiles/gui.txt', val)
+				shared.vapereload = true
+				if shared.VapeDeveloper then
+					loadstring(readfile('newvape/loader.lua'), 'loader')()
+				else
+					loadstring(game:HttpGet('https://raw.githubusercontent.com/Night5449791/InhalerObsidianCompiled/'..readfile('newvape/profiles/commit.txt')..'/loader.lua', true))()
+				end
+			end
+		end,
+		Tooltip = 'new - The newest vape theme to since v4.05\nold - The vape theme pre v4.05\nrise - Rise 6.0'
+	})]]
+
+	guipane:CreateDropdown({
+		Name = 'Search bar style',
+		List = {'Floating', 'None'},
+		Default = 'Floating',
+		Function = function(value)
+			vape.SearchBar.Object.Visible = value == 'Floating'
+		end,
+		Tooltip = 'Switch between search bar styles'
+	})
+
+	vape.RainbowMode = guipane:CreateDropdown({
 		Name = 'Rainbow Mode',
 		List = {'Normal', 'Gradient', 'Retro'},
-		Default = 'Normal',
 		Tooltip = 'Normal - Smooth color fade\nGradient - Gradient color fade\nRetro - Static color'
 	})
 
-	--[[
-		Notification settings
-	]]
+	guipane:CreateButton({
+		Name = 'Reset GUI positions',
+		Function = function()
+			for _, category in vape.Categories do
+				category.Object.Position = UDim2.fromOffset(6, 42)
+			end
+		end,
+		Tooltip = 'This will reset your GUI back to the default'
+	})
 
-	local notifPane = newPane('Notifications', 'Right')
+	guipane:CreateButton({
+		Name = 'Sort GUI',
+		Function = function()
+			local priority = {
+				GUICategory = 1,
+				CombatCategory = 2,
+				BlatantCategory = 3,
+				RenderCategory = 4,
+				UtilityCategory = 5,
+				WorldCategory = 6,
+				InventoryCategory = 7,
+				FriendsCategory = 8,
+				ProfilesCategory = 9
+			}
 
-	vape.Notifications = notifPane:CreateToggle({
-		Name = 'Notifications',
-		Function = function(enabled)
-			if vape.ToggleNotifications and vape.ToggleNotifications.Object then
-				vape.ToggleNotifications.Object:SetVisible(enabled)
+			local categories = {}
+			for _, category in vape.Categories do
+				if category.Type ~= 'Overlay' then
+					table.insert(categories, category)
+				end
 			end
 
-			if vape.SettingToggleNotifications and vape.SettingToggleNotifications.Object then
-				vape.SettingToggleNotifications.Object:SetVisible(enabled)
+			table.sort(categories, function(a, b)
+				return (priority[a.Object.Name] or 99) < (priority[b.Object.Name] or 99)
+			end)
+
+			local index = 0
+			for _, category in categories do
+				if category.Object.Visible then
+					category.Object.Position = UDim2.fromOffset(6 + (index % 8 * 230), 60 + (index > 7 and 360 or 0))
+					index += 1
+				end
+			end
+		end,
+		Tooltip = 'Sorts GUI by category order'
+	})
+
+	--[[
+		Notification Settings
+	]]
+
+	local notifpane = vape.Categories.Main.Settings:CreateSettingsPane({Name = 'Notifications'})
+	vape.Notifications = notifpane:CreateToggle({
+		Name = 'Notifications',
+		Function = function(enabled)
+			if vape.ToggleNotifications.Object then
+				vape.ToggleNotifications.Object.Visible = enabled
+			end
+
+			if vape.SettingToggleNotifications.Object then
+				vape.SettingToggleNotifications.Object.Visible = enabled
 			end
 		end,
 		Tooltip = 'Shows notifications',
 		Default = true
 	})
 
-	vape.ToggleNotifications = notifPane:CreateToggle({
+	vape.ToggleNotifications = notifpane:CreateToggle({
 		Name = 'Toggle alert',
 		Tooltip = 'Notifies you if a module is enabled/disabled.',
-		Default = true
+		Default = true,
+		Darker = true
 	})
-
-	vape.SettingToggleNotifications = notifPane:CreateToggle({
+	vape.SettingToggleNotifications = notifpane:CreateToggle({
 		Name = 'Setting toggle alert',
 		Tooltip = 'Notifies you when a bound setting is toggled.',
-		Default = true
+		Default = true,
+		Darker = true
 	})
 
-	--[[
-		Theme manager, an optional Obsidian addon
-	]]
+	vape.GUIColor = vape.Categories.Main.Settings:CreateGUISlider({
+		Name = 'GUI Theme',
+		Function = function(h, s, v)
+			vape:UpdateGUI()
+		end
+	})
 
-	pcall(function()
-		local addon = loadstring(game:HttpGet('https://raw.githubusercontent.com/deividcomsono/Obsidian/main/addons/ThemeManager.lua', true))
-		if not addon then return end
+	vape.GUIBind = vape.Categories.Main.Settings:CreateBind({
+		Name = 'Rebind GUI',
+		Default = {'RightShift'},
+		NoRemove = true,
+		Tooltip = 'Change the bind of the GUI'
+	})
 
-		local ThemeManager = addon()
-		ThemeManager:SetLibrary(Library)
-		ThemeManager:SetFolder('Inhaler')
-		ThemeManager:BuildThemeManager(vape.Window)
+	--Overlays
+
+	vape:Clean(task.spawn(function()
+		local hue = 0
+		repeat
+			for _, component in vape.RainbowSliders do
+				if component.Type == 'GUISlider' then
+					component:SetValue(vape:Color(hue))
+				else
+					component:SetValue(hue)
+				end
+			end
+
+			local delta = task.wait(1 / vape.RainbowUpdateSpeed.Value)
+			hue = (hue + (delta * (0.2 * vape.RainbowSpeed.Value))) % 1
+		until false
+	end))
+
+	local cursorConnection
+	vape:Clean(clickgui:GetPropertyChangedSignal('Visible'):Connect(function()
+		vape:UpdateGUI()
+
+		if clickgui.Visible and inputService.MouseEnabled then
+			if cursorConnection then
+				cursorConnection:Disconnect()
+			end
+
+			cursorConnection = runService.RenderStepped:Connect(function()
+				local isVisible = clickgui.Visible
+				for _, window in vape.Windows do
+					isVisible = isVisible or window.Visible
+				end
+
+				if not isVisible then
+					cursor.Visible = false
+					cursorConnection:Disconnect()
+					cursorConnection = nil
+					return
+				end
+
+				cursor.Visible = not inputService.MouseIconEnabled
+				if cursor.Visible then
+					local mouseLocation = inputService:GetMouseLocation()
+					cursor.Position = UDim2.fromOffset(mouseLocation.X - 31, mouseLocation.Y - 32)
+				end
+			end)
+		end
+	end))
+
+	vape:Clean(function()
+		if cursorConnection then
+			cursorConnection:Disconnect()
+		end
 	end)
 
+	vape:Clean(gui:GetPropertyChangedSignal('AbsoluteSize'):Connect(function()
+		if vape.Scale.Enabled then
+			scale.Scale = math.max(gui.AbsoluteSize.X / 1920, 0.6)
+		end
+	end))
+
+	vape:Clean(notifications.ChildRemoved:Connect(function()
+		for index, notif in notifications:GetChildren() do
+			if tween.Tween then
+				tween:Tween(notif, TweenInfo.new(0.4, Enum.EasingStyle.Exponential), {
+					Position = UDim2.new(1, 0, 1, -(29 + (78 * index)))
+				})
+			end
+		end
+	end))
+
+	vape:Clean(scale:GetPropertyChangedSignal('Scale'):Connect(function()
+		scaledgui.Size = UDim2.fromScale(1 / scale.Scale, 1 / scale.Scale)
+
+		for _, obj in scaledgui:QueryDescendants('GuiObject >> [Visible = true]') do
+			obj.Visible = false
+			obj.Visible = true
+		end
+	end))
+
+	vape:Clean(vape.GUIBind.Triggered:Connect(function()
+		if vape.ThreadFix then
+			setthreadidentity(8)
+		end
+
+		for _, window in self.Windows do
+			window.Visible = false
+		end
+
+		for _, module in self.Modules do
+			if module.Bind.Mobile then
+				module.Bind.Mobile.Visible = clickgui.Visible
+			end
+		end
+
+		clickgui.Visible = not clickgui.Visible
+		vape:BlurCheck()
+	end))
+
+	vape:Clean(inputService.InputBegan:Connect(function(input)
+		if vape.CurrentTooltip and input.KeyCode == Enum.KeyCode.LeftShift then
+			vape.CurrentTooltip()
+		end
+
+		if vape.Autocomplete and input.KeyCode == Enum.KeyCode.Tab then
+			vape.Autocomplete()
+		end
+
+		if not inputService:GetFocusedTextBox() and input.KeyCode ~= Enum.KeyCode.Unknown then
+			table.insert(vape.HeldKeybinds, input.KeyCode.Name)
+			if vape.Binding then return end
+
+			for _, bind in vape.ActiveBinds do
+				if checkKeybinds(vape.HeldKeybinds, bind.Keys, input.KeyCode.Name) then
+					bind.Triggered:Fire(true)
+				end
+			end
+		end
+	end))
+
+	vape:Clean(inputService.InputEnded:Connect(function(input)
+		if vape.CurrentTooltip and input.KeyCode == Enum.KeyCode.LeftShift then
+			vape.CurrentTooltip()
+		end
+
+		if not inputService:GetFocusedTextBox() and input.KeyCode ~= Enum.KeyCode.Unknown then
+			if vape.Binding then
+				if not vape.MultiKeybind.Enabled then
+					vape.HeldKeybinds = {input.KeyCode.Name}
+				end
+
+				vape.Binding:SetBind(vape.HeldKeybinds, true)
+				vape.Binding = nil
+			else
+				for _, bind in vape.ActiveBinds do
+					if bind.Hold and checkKeybinds(vape.HeldKeybinds, bind.Keys, input.KeyCode.Name) then
+						bind.Triggered:Fire(false)
+					end
+				end
+			end
+		end
+
+		local index = table.find(vape.HeldKeybinds, input.KeyCode.Name)
+		if index then
+			table.remove(vape.HeldKeybinds, index)
+		end
+	end))
 end
 
 function vape:Remove(obj)

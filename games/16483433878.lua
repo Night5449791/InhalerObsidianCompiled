@@ -52,7 +52,7 @@ run(function()
 		press = function(impact, atick)
 			if impact and (bt.Variables.window or 0) > 0 then
 				local diff = (impact - (bt.Variables.window * 0.3))
-	
+
 				if atick < impact and diff <= atick then
 					bt.Ambassador.Fire('ButtonA', 'down')
 					bt.Ambassador.Fire('ButtonA', 'up')
@@ -66,7 +66,7 @@ run(function()
 					if holdtick > 0.5 then
 						holdtick = 1 - holdtick
 					end
-	
+
 					holdtick = math.clamp(holdtick * 2, 0, 1)
 					if holdtick > bt.Variables.greenmin + ((bt.Variables.greenmax - bt.Variables.greenmin) / 2) and holdtick < bt.Variables.greenmax then
 						bt.Ambassador.Fire('ButtonA', 'up')
@@ -84,7 +84,7 @@ run(function()
 				local checker = gui.Meter.checker
 				local fillbar = gui.Meter.Fill
 				local fillpos = fillbar.AbsoluteSize.X + fillbar.AbsolutePosition.X
-	
+
 				for _, v in checker:GetChildren() do
 					if not v:GetAttribute('Skipped') then
 						local checkpos = (v.AbsolutePosition.X - 6)
@@ -98,21 +98,21 @@ run(function()
 			end
 		end
 	}
-	
+
 	local function isMyTurn()
 		if bt.Variables.myturn and bt.Variables.arena and bt.Variables.arena:GetAttribute('State') == 'Attacking' then
 			if Attack.Enabled and bt.Variables.itsme then
 				return true
 			end
-	
+
 			if Block.Enabled and not bt.Variables.itsme then
 				return true
 			end
 		end
-	
+
 		return false
 	end
-	
+
 	AutoAction = vape.Categories.Combat:CreateModule({
 		Name = 'AutoAction',
 		Function = function(callback)
@@ -121,12 +121,12 @@ run(function()
 					if isMyTurn() then
 						local impact = bt.Variables.timehere or bt.Variables.impact
 						local atick = tick() - (bt.Variables.atick or 0)
-	
+
 						if actions[bt.Variables.atktype] then
 							actions[bt.Variables.atktype](impact, atick)
 						end
 					end
-	
+
 					task.wait()
 				until not AutoAction.Enabled
 			end
@@ -148,7 +148,7 @@ end)
 run(function()
 	local MissCooldown
 	local index = game.PlaceId ~= 16483433878 and 20 or 53
-	
+
 	MissCooldown = vape.Categories.Combat:CreateModule({
 		Name = 'MissCooldown',
 		Function = function(callback)
@@ -165,7 +165,7 @@ end)
 run(function()
 	local AntiHazard
 	local old
-	
+
 	AntiHazard = vape.Categories.Blatant:CreateModule({
 		Name = 'AntiHazard',
 		Function = function(callback)
@@ -175,7 +175,7 @@ run(function()
 					if event == 'TakeDamage' then
 						return
 					end
-	
+
 					return old(...)
 				end)
 			else
@@ -198,7 +198,7 @@ run(function()
 		local Value
 		local VerticalValue
 		local up, down = 0, 0
-	
+
 		Fly = vape.Categories.Blatant:CreateModule({
 			Name = 'Fly',
 			Function = function(callback)
@@ -208,21 +208,21 @@ run(function()
 							local root = entitylib.character.RootPart
 							local state = entitylib.character.Humanoid:GetState()
 							if state == Enum.HumanoidStateType.Climbing or bt.Variables.transitioning then return end
-	
+
 							local movevec = entitylib.character.Humanoid.MoveDirection * Value.Value
 	                    	root.AssemblyLinearVelocity = Vector3.new(movevec.X, 1 + ((up + down) * VerticalValue.Value), movevec.Z)
 						end
 					end))
-	
+
 					up, down = 0, 0
 					Fly:Clean(UpKey.Triggered:Connect(function(isDown)
 						up = isDown and 1 or 0
 					end))
-	
+
 					Fly:Clean(DownKey.Triggered:Connect(function(isDown)
 						down = isDown and -1 or 0
 					end))
-	
+
 					if inputService.TouchEnabled then
 						pcall(function()
 							local jumpButton = lplr.PlayerGui.TouchGui.TouchControlFrame.JumpButton
@@ -273,7 +273,7 @@ end)
 
 run(function()
 	local FlyingAttack
-	
+
 	FlyingAttack = vape.Categories.Blatant:CreateModule({
 		Name = 'FlyingAttack',
 		Function = function(callback)
@@ -290,7 +290,7 @@ end)
 run(function()
 	local Value
 	local AutoDisable
-	
+
 	LongJump = vape.Categories.Blatant:CreateModule({
 		Name = 'LongJump',
 		Function = function(callback)
@@ -307,11 +307,11 @@ run(function()
 								entitylib.character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 							end
 						end
-	
+
 						local root = entitylib.character.RootPart
 						local state = entitylib.character.Humanoid:GetState()
 						if state == Enum.HumanoidStateType.Climbing or bt.Variables.transitioning then return end
-	
+
 						local movevec = entitylib.character.Humanoid.MoveDirection * Value.Value
 	                    root.AssemblyLinearVelocity = Vector3.new(movevec.X, root.AssemblyLinearVelocity.Y, movevec.Z)
 					end
@@ -340,7 +340,7 @@ end)
 
 run(function()
 	local PickupTP
-	
+
 	PickupTP = vape.Categories.Blatant:CreateModule({
 		Name = 'PickupTP',
 		Function = function(callback)
@@ -354,13 +354,13 @@ run(function()
 								if not old then
 									old = entitylib.character.RootPart.CFrame
 								end
-	
+
 								success = false
 								entitylib.character.RootPart.CFrame = v.CFrame
 								break
 							end
 						end
-	
+
 						if success and old then
 							entitylib.character.RootPart.CFrame = old
 							old = nil
@@ -368,7 +368,7 @@ run(function()
 					else
 						old = nil
 					end
-	
+
 					task.wait(0.4)
 				until not PickupTP.Enabled
 			end
@@ -380,7 +380,7 @@ end)
 run(function()
 	local Speed
 	local Value
-	
+
 	Speed = vape.Categories.Blatant:CreateModule({
 		Name = 'Speed',
 		Function = function(callback)
@@ -390,7 +390,7 @@ run(function()
 						local root = entitylib.character.RootPart
 						local state = entitylib.character.Humanoid:GetState()
 						if state == Enum.HumanoidStateType.Climbing or bt.Variables.transitioning then return end
-	
+
 						local movevec = entitylib.character.Humanoid.MoveDirection * Value.Value
 						root.AssemblyLinearVelocity = Vector3.new(movevec.X, root.AssemblyLinearVelocity.Y, movevec.Z)
 					end
@@ -417,7 +417,7 @@ run(function()
 	local SpeedSpin
 	local Value
 	local old
-	
+
 	SpeedSpin = vape.Categories.Blatant:CreateModule({
 		Name = 'SpeedSpin',
 		Function = function(callback)
@@ -427,7 +427,7 @@ run(function()
 					if badge == 'Speed Spin' then
 						return Value.Value
 					end
-	
+
 					return old(...)
 				end)
 			else
@@ -453,30 +453,30 @@ run(function()
 	local Transparency
 	local Bux
 	local Reference = {}
-	
+
 	local function Added(ent)
 		if vape.ThreadFix then
 			setthreadidentity(8)
 		end
-	
+
 		if Bux.Enabled and ent.Name ~= 'BUX' then
 			return
 		end
-	
+
 		local EntityTracer = Drawing.new('Line')
 		EntityTracer.Thickness = 1
 		EntityTracer.Transparency = 1 - Transparency.Value
 		EntityTracer.Color = Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
 		Reference[ent] = EntityTracer
 	end
-	
+
 	local function Removed(ent)
 		local v = Reference[ent]
 		if v then
 			if vape.ThreadFix then
 				setthreadidentity(8)
 			end
-	
+
 			Reference[ent] = nil
 			pcall(function()
 				v.Visible = false
@@ -484,41 +484,41 @@ run(function()
 			end)
 		end
 	end
-	
+
 	local function ColorFunc(hue, sat, val)
 		local tracerColor = Color3.fromHSV(hue, sat, val)
 		for ent, EntityTracer in Reference do
 			EntityTracer.Color = tracerColor
 		end
 	end
-	
+
 	local function Loop()
 		local screenSize = vape.gui.AbsoluteSize
 		local startVector = Vector2.new(screenSize.X / 2, screenSize.Y / 2)
-	
+
 		for ent, EntityTracer in Reference do
 			if ent:GetAttribute('Inactive') then
 				EntityTracer.Visible = false
 				continue
 			end
-	
+
 			local pos = ent.Position
 			local rootPos, rootVis = gameCamera:WorldToViewportPoint(pos)
-	
+
 			if not rootVis then
 				local tempPos = gameCamera.CFrame:PointToObjectSpace(pos)
 				tempPos = CFrame.Angles(0, 0, (math.atan2(tempPos.Y, tempPos.X) + math.pi)):VectorToWorldSpace((CFrame.Angles(0, math.rad(89.9), 0):VectorToWorldSpace(Vector3.new(0, 0, -1))))
 				rootPos = gameCamera:WorldToViewportPoint(gameCamera.CFrame:pointToWorldSpace(tempPos))
 				rootVis = true
 			end
-	
+
 			local endVector = Vector2.new(rootPos.X, rootPos.Y)
 			EntityTracer.Visible = rootVis
 			EntityTracer.From = startVector
 			EntityTracer.To = endVector
 		end
 	end
-	
+
 	PickupTracers = vape.Categories.Render:CreateModule({
 		Name = 'PickupTracers',
 		Function = function(callback)
@@ -578,7 +578,7 @@ end)
 
 run(function()
 	local AutoCamel
-	
+
 	AutoCamel = vape.Categories.Utility:CreateModule({
 		Name = 'AutoCamel',
 		Function = function(callback)
@@ -589,13 +589,13 @@ run(function()
 					AutoCamel:Toggle()
 					return
 				end
-	
+
 				local module = require(camel.Dialogue:FindFirstChild('RunScript', true).ModuleScript)
 				repeat
 					if (lplr:GetAttribute('TIX') or 0) >= 30 then
 						module:Run()
 					end
-	
+
 					task.wait(0.5)
 				until not AutoCamel.Enabled
 			end
@@ -606,7 +606,7 @@ end)
 
 run(function()
 	local AutoCloudGrind
-	
+
 	AutoCloudGrind = vape.Categories.Utility:CreateModule({
 		Name = 'AutoCloudGrind',
 		Function = function(callback)
@@ -616,12 +616,12 @@ run(function()
 						local doRun = true
 						for _, v in bt.Variables.arena.Goon:GetChildren() do
 							local drop = v.Value and v.Value:GetAttribute('Item_Drop')
-	
+
 							if drop and drop:find('FX ') and not bt.Variables.data.CardCollection[drop] then
 								doRun = false
 							end
 						end
-	
+
 						if doRun then
 							bt.Network.FireServer('CommitToMove', 'Run Away', nil, nil)
 							task.wait(3)
@@ -630,7 +630,7 @@ run(function()
 							workspace.Sounds.Money.Ended:Wait()
 						end
 					end
-	
+
 					task.wait(0.05)
 				until not AutoCloudGrind.Enabled
 			end
@@ -643,7 +643,7 @@ run(function()
 	local AutoFish
 	local KeepList
 	local old
-	
+
 	AutoFish = vape.Categories.Utility:CreateModule({
 		Name = 'AutoFish',
 		Function = function(callback)
@@ -654,10 +654,10 @@ run(function()
 					AutoFish:Toggle()
 					return
 				end
-	
+
 				old = workspace.Sounds.Money.Volume
 				workspace.Sounds.Money.Volume = 0
-	
+
 				repeat
 					local fish = lplr.Status:GetAttribute('NextFish')
 					local res = bt.Network.InvokeServer('FishItem')
@@ -665,10 +665,10 @@ run(function()
 						if not table.find(KeepList.ListEnabled, fish) then
 							bt.Network.InvokeServer('UseItem', fish, fishman)
 						end
-	
+
 						bt.Network.InvokeServer('BuyItem', fishman.ShopItems:GetChildren()[1], fishman)
 					end
-	
+
 					task.wait()
 				until not AutoFish.Enabled
 			else
@@ -687,7 +687,7 @@ end)
 
 run(function()
 	local AutoPaint
-	
+
 	AutoPaint = vape.Categories.Utility:CreateModule({
 		Name = 'AutoPaint',
 		Function = function(callback)
@@ -695,11 +695,11 @@ run(function()
 				local gui = lplr.PlayerGui.HUD.Painter
 				local canvas = gui:FindFirstChild('CanvasTime', true).Parent
 				local colorpicker = gui.ColorPicker
-	
+
 				repeat
 					if gui.Visible and bt.Variables.paintingflag and not bt.Variables.canvas:GetAttribute('Completed') then
 						local solution = bt.Variables.canvas.Parent:FindFirstChild('Solution Easel')
-	
+
 						if solution then
 							for _, v in solution.solution:GetDescendants() do
 								if v:IsA('BasePart') and bt.Variables.canvas[v.Parent.Name][v.Name].BrickColor ~= v.BrickColor then
@@ -711,16 +711,16 @@ run(function()
 												break
 											end
 										end
-	
+
 										bt.Ambassador.Fire('ButtonPress', element)
 									end
-	
+
 									break
 								end
 							end
 						end
 					end
-	
+
 					task.wait(0.05)
 				until not AutoPaint.Enabled
 			end

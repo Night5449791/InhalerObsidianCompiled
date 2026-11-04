@@ -259,14 +259,14 @@ run(function()
 	local Speed
 	local SpeedValue
 	local original
-	
+
 	-- walk speed only: the other modes spike AssemblyLinearVelocity, which this game reads as a fall
 	Speed = vape.Categories.Blatant:CreateModule({
 		Name = 'Speed',
 		Function = function(callback)
 			if callback then
 				original = entitylib.isAlive and entitylib.character.Humanoid.WalkSpeed or 16
-	
+
 				Speed:Clean(runService.PreSimulation:Connect(function()
 					if entitylib.isAlive and entitylib.character.Humanoid.WalkSpeed ~= SpeedValue.Value then
 						entitylib.character.Humanoid.WalkSpeed = SpeedValue.Value
@@ -288,5 +288,5 @@ run(function()
 		end,
 		Tooltip = 'Above 95 the game reads your movement as a fall and reports it.'
 	})
-	
+
 end)

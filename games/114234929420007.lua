@@ -648,27 +648,27 @@ run(function()
 	local AutoFire
 	local OriginalCreate
 	local rand = Random.new()
-	
+
 	run(function()
 		local components = replicatedStorage:FindFirstChild('Components')
 		local weapon = components and components:FindFirstChild('Weapon')
 		local classes = weapon and weapon:FindFirstChild('Classes')
 		local module = classes and classes:FindFirstChild('Bullet')
 		if not module then return end
-	
+
 		local suc, Bullet = pcall(require, module)
 		if not suc or typeof(Bullet.create) ~= 'function' then return end
-	
+
 		local entityMouse = entitylib.EntityMouse
 		local entityPosition = entitylib.EntityPosition
-	
+
 		-- rewriting Direction where the bullet is returned moves the real shot without touching the
 		-- packet layout or the sequence counters the server checks
 		local function getTarget(origin)
 			-- a failed roll leaves the shot untouched, so the aim lands as often as the chance
 			-- allows and the misses look like ordinary bad aim
 			if rand:NextNumber(0, 100) > HitChance.Value then return end
-	
+
 			local targetPart = rand:NextNumber(0, 100) < HeadshotChance.Value and 'Head' or 'RootPart'
 			local fromMouse = Mode.Value == 'Mouse'
 			local entity = (fromMouse and entityMouse or entityPosition)({
@@ -679,52 +679,52 @@ run(function()
 				Players = Targets.Players.Enabled,
 				NPCs = Targets.NPCs.Enabled
 			})
-	
+
 			return entity, entity and entity[targetPart]
 		end
-	
+
 		-- reused every shot so the wall check does not allocate a fresh ignore table
 		local ignore = {}
-	
+
 		-- Autofire pulls the trigger through the weapon's own shoot(): it runs the ammo,
 		-- cooldown and sequence bookkeeping a mouse1 press runs, so the packet is the same one
 		-- a real click produces and SilentAim still rewrites Direction inside Bullet.create.
 		local weapon, hookBullet
-	
+
 		-- Bullet.create is handed the weapon's own bullet instance, which points back at the
 		-- weapon, so a real shot refreshes the reference without a collector scan
 		local function findWeapon()
 			if typeof(getgc) ~= 'function' then return end
-	
+
 			for _, v in getgc(true) do
 				if type(v) == 'table' and rawget(v, 'IsEquipped') == true and type(rawget(v, 'Identifier')) == 'string' then
 					return v
 				end
 			end
 		end
-	
+
 		local function currentWeapon()
 			local active = weapon
 			if active and rawget(active, 'IsEquipped') == true and rawget(active, 'IsDestroyed') ~= true then
 				return active
 			end
-	
+
 			-- the inventory rebuilds the weapon on a respawn or a loadout change
 			weapon = findWeapon()
 			return weapon
 		end
-	
+
 		-- the trigger only goes down when there is something to hit: the closest target in
 		-- range whose body the bullet can reach, wood only like the shot itself
 		local gateIgnore = {}
-	
+
 		local function reachable()
 			local localEntity = entitylib.character
 			if not (entitylib.isAlive and localEntity) then return false end
-	
+
 			local root = localEntity.RootPart
 			if not root then return false end
-	
+
 			local origin = root.Position
 			local entity = entityPosition({
 				Part = 'RootPart',
@@ -733,26 +733,26 @@ run(function()
 				Players = Targets.Players.Enabled,
 				NPCs = Targets.NPCs.Enabled
 			})
-	
+
 			if not entity or not entity.RootPart then return false end
-	
+
 			gateIgnore[1] = localEntity.Character
 			gateIgnore[2] = entity.Character
-	
+
 			-- the trigger only goes down on a clear line
 			return entitylib.Wallcheck(origin, entity.RootPart.Position, gateIgnore) == nil
 		end
-	
+
 		-- the look-for-a-target pass is the expensive half (an entity sweep and a raycast), so
 		-- it runs on its own clock while the trigger itself is pulled every frame
 		local GATE_SECONDS = 0.15
-	
+
 		local function autoFireLoop()
 			local gateUntil, gateOk = 0, false
-	
+
 			repeat
 				task.wait()
-	
+
 				-- the hook being ours is what proves this loop still belongs to a live module:
 				-- a re-inject installs its own, and this copy then stops shooting for good
 				if AutoFire.Enabled and SilentAim.Enabled and Bullet.create == hookBullet then
@@ -761,7 +761,7 @@ run(function()
 						gateOk = reachable()
 						gateUntil = now + GATE_SECONDS
 					end
-	
+
 					local active = gateOk and currentWeapon()
 					if active then
 						pcall(active.shoot, active)
@@ -769,66 +769,66 @@ run(function()
 				end
 			until not AutoFire.Enabled
 		end
-	
+
 		hookBullet = function(self, aimingOptions, isAiming)
 			-- every real shot hands the weapon over, so the autofire reference survives a respawn
 			weapon = rawget(self, 'Weapon') or weapon
-	
+
 			local bullet = OriginalCreate(self, aimingOptions, isAiming)
 			if not SilentAim.Enabled or type(bullet) ~= 'table' then return bullet end
-	
+
 			local origin, direction = bullet.Origin, bullet.Direction
 			if typeof(origin) ~= 'Vector3' or typeof(direction) ~= 'Vector3' then return bullet end
-	
+
 			local entity, part = getTarget(origin)
 			if not part then return bullet end
-	
+
 			local position = part.Position
 			ignore[1] = entity.Character
-	
+
 			-- a clear line only: anything the ray hits keeps the shot where the player pointed it
 			if entitylib.Wallcheck(origin, position, ignore) then
 				return bullet
 			end
-	
+
 			bullet.Direction = (position - origin).Unit
 			if ShowTarget.Enabled then
 				targetinfo.Targets[entity] = os.clock() + 1
 			end
-	
+
 			return bullet
 		end
-	
+
 		-- the original and the last hook are kept in shared so a re-inject cannot wrap its own hook
 		local function installHook()
 			if Bullet.create == hookBullet then return end
-	
+
 			local previous = shared.__bloxstrikeBullet
 			if previous and Bullet.create == previous.Hook then
 				OriginalCreate = previous.Original
 			else
 				OriginalCreate = Bullet.create
 			end
-	
+
 			Bullet.create = hookBullet
 			shared.__bloxstrikeBullet = {
 				Hook = hookBullet,
 				Original = OriginalCreate
 			}
 		end
-	
+
 		local function removeHook()
 			if not OriginalCreate then return end
-	
+
 			local previous = shared.__bloxstrikeBullet
 			if Bullet.create == hookBullet or (previous and Bullet.create == previous.Hook) then
 				Bullet.create = OriginalCreate
 			end
-	
+
 			OriginalCreate = nil
 			shared.__bloxstrikeBullet = nil
 		end
-	
+
 		SilentAim = vape.Categories.Combat:CreateModule({
 			Name = 'SilentAim',
 			Function = function(callback)
@@ -840,7 +840,7 @@ run(function()
 			end,
 			Tooltip = 'Moves the shot direction onto the target, the crosshair itself never moves'
 		})
-	
+
 		Targets = SilentAim:CreateTargets({
 			Players = true,
 			NPCs = true
@@ -877,7 +877,7 @@ run(function()
 				if Mode.Value == 'Mouse' then
 					return val == 1 and 'pixel' or 'pixels'
 				end
-	
+
 				return val == 1 and 'stud' or 'studs'
 			end
 		})
@@ -889,13 +889,13 @@ run(function()
 			Tooltip = 'Fires while a target is in range; the weapon keeps its own ammo and fire rate',
 			Function = function(callback)
 				if not callback then return end
-	
+
 				weapon = weapon or findWeapon()
 				task.spawn(autoFireLoop)
 			end
 		})
 	end)
-	
+
 end)
 
 run(function()
@@ -903,7 +903,7 @@ run(function()
 	local Fog
 	local Smoke
 	local lightingService = cloneref(game:GetService('Lighting'))
-	
+
 	-- the game ships its lighting per map as a whole property table, so the fog is not set once and
 	-- forgotten: every value is written back whenever something else moves it (Lighting.FogStart and
 	-- FogEnd, or the Atmosphere under Lighting), and an Atmosphere added later is caught on ChildAdded
@@ -911,75 +911,75 @@ run(function()
 		FogStart = 100000,
 		FogEnd = 100000
 	}
-	
+
 	local ATMOSPHERE_PROPERTIES = {
 		Density = 0,
 		Haze = 0
 	}
-	
+
 	local CONNECTIONS = {}
 	local saved = setmetatable({}, {__mode = 'k'})
 	local locked = setmetatable({}, {__mode = 'k'})
 	local smokeSaved = setmetatable({}, {__mode = 'k'})
-	
+
 	local function lock(instance, prop, value)
 		local props = saved[instance]
 		if not props then
 			props = {}
 			saved[instance] = props
 		end
-	
+
 		if props[prop] == nil then
 			props[prop] = instance[prop]
 		end
-	
+
 		local active = locked[instance]
 		if not active then
 			active = {}
 			locked[instance] = active
 		end
-	
+
 		if active[prop] then
 			return
 		end
-	
+
 		active[prop] = true
-	
+
 		if instance[prop] ~= value then
 			instance[prop] = value
 		end
-	
+
 		table.insert(CONNECTIONS, instance:GetPropertyChangedSignal(prop):Connect(function()
 			if instance[prop] ~= value then
 				instance[prop] = value
 			end
 		end))
 	end
-	
+
 	local function lockAtmosphere(atmosphere)
 		for prop, value in ATMOSPHERE_PROPERTIES do
 			lock(atmosphere, prop, value)
 		end
 	end
-	
+
 	local function startFog()
 		for prop, value in FOG_PROPERTIES do
 			lock(lightingService, prop, value)
 		end
-	
+
 		for _, instance in lightingService:GetChildren() do
 			if instance:IsA('Atmosphere') then
 				lockAtmosphere(instance)
 			end
 		end
-	
+
 		table.insert(CONNECTIONS, lightingService.ChildAdded:Connect(function(instance)
 			if instance:IsA('Atmosphere') then
 				lockAtmosphere(instance)
 			end
 		end))
 	end
-	
+
 	-- a smoke grenade is a VoxelSmoke_ folder in Workspace.Debris holding SmokeVoxel parts, which is
 	-- also the two names the game's own aim assist and mobile auto shoot use to test line of sight
 	local function hideSmoke(instance)
@@ -989,39 +989,39 @@ run(function()
 		if instance.Name ~= 'SmokeVoxel' or smokeSaved[instance] or not instance:IsA('BasePart') then
 			return
 		end
-	
+
 		local parent = instance.Parent
 		if not parent or parent.Name:find('VoxelSmoke_', 1, true) ~= 1 then
 			return
 		end
-	
+
 		smokeSaved[instance] = {
 			CanCollide = instance.CanCollide,
 			CanQuery = instance.CanQuery,
 			LocalTransparencyModifier = instance.LocalTransparencyModifier
 		}
-	
+
 		-- the modifier keeps the cloud hidden while the game fades the part itself, and the query
 		-- flag is what makes the aura and the aim casts look straight through it
 		instance.CanCollide = false
 		instance.CanQuery = false
 		instance.LocalTransparencyModifier = 1
 	end
-	
+
 	local function watchDebris(debris)
 		for _, instance in debris:GetDescendants() do
 			hideSmoke(instance)
 		end
-	
+
 		table.insert(CONNECTIONS, debris.DescendantAdded:Connect(hideSmoke))
 	end
-	
+
 	local function startSmoke()
 		local debris = workspace:FindFirstChild('Debris')
 		if debris then
 			watchDebris(debris)
 		end
-	
+
 		-- the folder goes away and comes back with the map, so a fresh one has to be picked up again
 		table.insert(CONNECTIONS, workspace.ChildAdded:Connect(function(instance)
 			if instance.Name == 'Debris' then
@@ -1029,15 +1029,15 @@ run(function()
 			end
 		end))
 	end
-	
+
 	local function stop()
 		for _, connection in CONNECTIONS do
 			connection:Disconnect()
 		end
-	
+
 		table.clear(CONNECTIONS)
 		table.clear(locked)
-	
+
 		for instance, props in saved do
 			if instance.Parent then
 				for prop, value in props do
@@ -1047,7 +1047,7 @@ run(function()
 				end
 			end
 		end
-	
+
 		for instance, props in smokeSaved do
 			if instance.Parent then
 				instance.CanCollide = props.CanCollide
@@ -1055,22 +1055,22 @@ run(function()
 				instance.LocalTransparencyModifier = props.LocalTransparencyModifier
 			end
 		end
-	
+
 		table.clear(smokeSaved)
 	end
-	
+
 	local function refresh()
 		stop()
-	
+
 		if Fog.Enabled then
 			startFog()
 		end
-	
+
 		if Smoke.Enabled then
 			startSmoke()
 		end
 	end
-	
+
 	AntiFog = vape.Categories.Render:CreateModule({
 		Name = 'AntiFog',
 		Function = function(callback)
@@ -1100,5 +1100,5 @@ run(function()
 			end
 		end
 	})
-	
+
 end)

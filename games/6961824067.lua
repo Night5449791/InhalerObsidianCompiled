@@ -219,7 +219,7 @@ end
 
 run(function()
 	local FlingAura
-	
+
 	-- Fling Aura is Player Fling without a chosen target: every valid entity inside the
 	-- radius gets its network claimed and written to, on the same 0.1s rhythm. The source
 	-- runs one thread per target; one loop over all of them is cheaper and produces the
@@ -231,17 +231,17 @@ run(function()
 				local range = FlingAura.Options['Range']
 				local speed = FlingAura.Options['Speed']
 				local setOwner = ftap.remotes and ftap.remotes.setNetworkOwner
-	
+
 				repeat
 					setOwner = ftap.remotes and ftap.remotes.setNetworkOwner
 					local origin = entitylib.character.RootPart.Position
 					local reach = range.Value
-	
+
 					for _, ent in entitylib.List do
 						if not FlingAura.Enabled then break end
 						if not ent.Targetable or not ent.RootPart then continue end
 						if (ent.RootPart.Position - origin).Magnitude > reach then continue end
-	
+
 						local root = ent.RootPart
 						pcall(function()
 							if setOwner then setOwner:FireServer(root, gameCamera.CFrame) end
@@ -250,7 +250,7 @@ run(function()
 							root.AssemblyAngularVelocity = Vector3.new(power, power, power)
 						end)
 					end
-	
+
 					task.wait(0.1)
 				until not FlingAura.Enabled
 			end
@@ -269,12 +269,12 @@ run(function()
 		Max = 100,
 		Default = 50
 	})
-	
+
 end)
 
 run(function()
 	local GamepassReach
-	
+
 	-- This game sells reach as a gamepass: the character carries a bool called
 	-- `FartherReach` and the grab code reads it to decide how far a line may go. The client
 	-- sets that value on itself, so writing it here is the whole module.
@@ -287,7 +287,7 @@ run(function()
 		Function = function(callback)
 			if callback then
 				local flag
-	
+
 				local function apply()
 					if not entitylib.isAlive then return end
 					if not flag then
@@ -295,19 +295,19 @@ run(function()
 						flag.Name = 'FartherReach'
 						flag.Parent = lplr
 					end
-	
+
 					flag.Value = true
 				end
-	
+
 				apply()
-	
+
 				GamepassReach:Clean(function()
 					if flag then
 						flag:Destroy()
 						flag = nil
 					end
 				end)
-	
+
 				-- the game re-creates the flag when it re-evaluates the gamepass, so it is
 				-- re-asserted on the same rhythm the grab code uses
 				repeat
@@ -317,12 +317,12 @@ run(function()
 			end
 		end
 	})
-	
+
 end)
 
 run(function()
 	local LongGrab
-	
+
 	-- Grabbing is the game's own verb: the client asks for a grab line to the part it is
 	-- looking at, and the server attaches it. The exploit here is that the line is not
 	-- range-checked on the client side of the request, so a longer reach than the game
@@ -331,12 +331,12 @@ run(function()
 		local remotes = ftap.remotes
 		if not remotes or not remotes.createGrabLine then return false end
 		if not part then return false end
-	
+
 		return pcall(function()
 			remotes.createGrabLine:FireServer(part, part.CFrame)
 		end)
 	end
-	
+
 	LongGrab = vape.Categories.Blatant:CreateModule({
 		Name = 'Long Grab',
 		Function = function(callback)
@@ -344,11 +344,11 @@ run(function()
 				-- the bind fires on change; a hold bind sends true while held
 				local held = false
 				local range = LongGrab.Options['Range']
-	
+
 				LongGrab:Clean(LongGrab.Options['Bind'].Triggered:Connect(function(isDown)
 					held = isDown
 				end))
-	
+
 				repeat
 					if held then
 						local target = entitylib.EntityPosition({
@@ -356,12 +356,12 @@ run(function()
 							Part = 'RootPart',
 							Range = range.Value
 						})
-	
+
 						if target and target.RootPart then
 							grabPart(target.RootPart)
 						end
 					end
-	
+
 					task.wait(0.15)
 				until not LongGrab.Enabled
 			end
@@ -379,12 +379,12 @@ run(function()
 		Default = {'E'},
 		Hold = true
 	})
-	
+
 end)
 
 run(function()
 	local PlayerFling
-	
+
 	-- The grab system is what makes this game fling: whoever holds a part owns its network,
 	-- and the server trusts that owner's CFrame. So a fling is a loop that keeps claiming
 	-- ownership of the target and writes a velocity far past what the game expects; the
@@ -394,36 +394,36 @@ run(function()
 	-- write is undone before it replicates. 0.1s is the source's cadence and it is what the
 	-- server tolerates without dropping the grab.
 	local SPIN_CFRAME = CFrame.new(150, 307, 332)
-	
+
 	local function primaryOf(obj)
 		if not obj then return nil end
-	
+
 		if obj:IsA('BasePart') then return obj end
 		if obj.PrimaryPart then return obj.PrimaryPart end
-	
+
 		return obj:FindFirstChild('HumanoidRootPart')
 			or obj:FindFirstChild('Head')
 			or obj:FindFirstChild('Torso')
 			or obj:FindFirstChildWhichIsA('BasePart')
 	end
-	
+
 	local function flingTarget(ent)
 		local remotes = ftap.remotes
 		if not remotes or not remotes.setNetworkOwner then return false end
-	
+
 		local character = ent and ent.Character
 		local root = character and (ent.RootPart or character:FindFirstChild('HumanoidRootPart'))
 		if not root then return false end
-	
+
 		pcall(function()
 			remotes.setNetworkOwner:FireServer(root, gameCamera.CFrame)
 			root.AssemblyLinearVelocity = Vector3.new(0, 1e7, 0)
 			root.AssemblyAngularVelocity = Vector3.new(1e7, 1e7, 1e7)
 		end)
-	
+
 		return true
 	end
-	
+
 	PlayerFling = vape.Categories.Blatant:CreateModule({
 		Name = 'Player Fling',
 		Function = function(callback)
@@ -431,14 +431,14 @@ run(function()
 				local range = PlayerFling.Options['Range']
 				local auto = PlayerFling.Options['Auto']
 				local immediate = PlayerFling.Options['Instant']
-	
+
 				repeat
 					local target = entitylib.EntityPosition({
 						Players = true,
 						Part = 'RootPart',
 						Range = range.Value
 					})
-	
+
 					if target then
 						if immediate.Enabled then
 							-- one shot: claim, write, and let the server replicate the throw
@@ -451,7 +451,7 @@ run(function()
 							until not PlayerFling.Enabled or not auto.Enabled or not target.Character
 						end
 					end
-	
+
 					task.wait(0.1)
 				until not PlayerFling.Enabled
 			end
@@ -474,12 +474,12 @@ run(function()
 		Default = false,
 		Tooltip = 'One throw instead of a continuous loop'
 	})
-	
+
 end)
 
 run(function()
 	local ToyESP
-	
+
 	-- The game already tags every spawned toy, so an ESP over them is a highlight on the
 	-- tagged models rather than a scan of the workspace. Player ESP stays with the universal
 	-- module; this only covers toys, which is what this game is about.
@@ -489,14 +489,14 @@ run(function()
 	-- color picked while the module is off is already in place when it is enabled.
 	local hue, sat, val = 0.5, 1, 1
 	local boxes = {}
-	
+
 	local function paint()
 		local colour = Color3.fromHSV(hue, sat, val)
 		for _, box in boxes do
 			box.Color3 = colour
 		end
 	end
-	
+
 	ToyESP = vape.Categories.Render:CreateModule({
 		Name = 'Toy ESP',
 		Function = function(callback)
@@ -505,18 +505,18 @@ run(function()
 				-- around is what gets adorned
 				local function partOf(obj)
 					if obj:IsA('BasePart') then return obj end
-	
+
 					return obj.PrimaryPart
 						or obj:FindFirstChild('Hitbox')
 						or obj:FindFirstChildWhichIsA('BasePart')
 				end
-	
+
 				local function add(obj)
 					if not ToyESP.Enabled or boxes[obj] then return end
-	
+
 					local part = partOf(obj)
 					if not part then return end
-	
+
 					local box = Instance.new('BoxHandleAdornment')
 					box.Size = part.Size
 					box.Adornee = part
@@ -527,19 +527,19 @@ run(function()
 					box.Parent = vape.gui
 					boxes[obj] = box
 				end
-	
+
 				for obj in ftap.toys do
 					add(obj)
 				end
-	
+
 				-- toys spawn and despawn constantly; the tag signals follow them without
 				-- polling the whole workspace
 				ToyESP:Clean(collectionService:GetInstanceAddedSignal('Toy'):Connect(add))
 				ToyESP:Clean(collectionService:GetInstanceAddedSignal('SpawnedToy'):Connect(add))
-	
+
 				repeat
 					task.wait(1)
-	
+
 					for obj, box in boxes do
 						if not obj.Parent then
 							box:Destroy()
@@ -547,11 +547,11 @@ run(function()
 						end
 					end
 				until not ToyESP.Enabled
-	
+
 				for _, box in boxes do
 					box:Destroy()
 				end
-	
+
 				table.clear(boxes)
 			end
 		end
@@ -565,12 +565,12 @@ run(function()
 			if ToyESP.Enabled then paint() end
 		end
 	})
-	
+
 end)
 
 run(function()
 	local ToySpawner
-	
+
 	-- The game only lets you spawn what you have bought, and the check is a CanSpawnToy
 	-- remote the client is free to skip: the spawn function itself takes a toy name and a
 	-- position and does not re-check ownership. So the dropdown is simply the list of names
@@ -589,7 +589,7 @@ run(function()
 		'FlyingToyPlane',
 		'FlyingToyUfo'
 	}
-	
+
 	ToySpawner = vape.Categories.Utility:CreateModule({
 		Name = 'Toy Spawner',
 		Function = function(callback)
@@ -597,24 +597,24 @@ run(function()
 				local toy = ToySpawner.Options['Toy']
 				local bind = ToySpawner.Options['Bind']
 				local distance = ToySpawner.Options['Distance']
-	
+
 				local function spawn()
 					if not entitylib.isAlive then return end
-	
+
 					local root = entitylib.character.RootPart
 					if not root then return end
-	
+
 					local position = root.Position + (gameCamera.CFrame.LookVector * distance.Value)
-	
+
 					if not ftap.spawnToy(toy.Value, position) then
 						notif('Toy Spawner', 'The game has not loaded its spawn remote yet', 3, 'warning')
 					end
 				end
-	
+
 				ToySpawner:Clean(bind.Triggered:Connect(function(isDown)
 					if isDown then spawn() end
 				end))
-	
+
 				repeat
 					task.wait()
 				until not ToySpawner.Enabled
@@ -638,5 +638,5 @@ run(function()
 		Default = {'F'},
 		Tooltip = 'Spawn the selected toy where you are looking'
 	})
-	
+
 end)

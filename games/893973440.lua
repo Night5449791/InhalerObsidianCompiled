@@ -155,7 +155,7 @@ end
 run(function()
 	local NoSlowdown
 	local old
-	
+
 	NoSlowdown = vape.Categories.Blatant:CreateModule({
 		Name = 'NoSlowdown',
 		Function = function(callback)
@@ -167,7 +167,7 @@ run(function()
 							v:Disable()
 						end
 					end
-	
+
 					task.wait(0.1)
 				until not NoSlowdown.Enabled
 			else
@@ -184,7 +184,7 @@ end)
 run(function()
 	local PhaseHammer
 	local old
-	
+
 	local function getEnv()
 		local renv = getsenv(mod)
 		if not (renv and renv.OnClick) then
@@ -193,28 +193,28 @@ run(function()
 				task.wait()
 			until renv and renv.OnClick or not PhaseHammer.Enabled
 		end
-	
+
 		return PhaseHammer.Enabled and renv
 	end
-	
+
 	local function addHammer(hammer)
 		if hammer and hammer.Name == 'Hammer' then
 			local mod = hammer:WaitForChild('LocalClubScript', 3)
 			if mod and PhaseHammer.Enabled then
 				local env = getEnv()
 				if not env then return end
-	
+
 				old = env.OnClick
 				debug.setconstant(debug.getproto(old, 1), 7, 0)
 			end
 		end
 	end
-	
+
 	local function addEntity(ent)
 		PhaseHammer:Clean(ent.Character.ChildAdded:Connect(addHammer))
 		addHammer(ent.Character:FindFirstChild('Hammer'))
 	end
-	
+
 	PhaseHammer = vape.Categories.Blatant:CreateModule({
 		Name = 'PhaseHammer',
 		Function = function(callback)
@@ -232,12 +232,12 @@ run(function()
 		end,
 		Tooltip = 'Allow your hammer to clip through walls'
 	})
-	
+
 end)
 
 run(function()
 	local RestrainBeast
-	
+
 	RestrainBeast = vape.Categories.Blatant:CreateModule({
 		Name = 'RestrainBeast',
 		Function = function(callback)
@@ -249,7 +249,7 @@ run(function()
 							rem:FireServer('HammerClick', true)
 						end
 					end
-	
+
 					task.wait(0.1)
 				until not RestrainBeast.Enabled
 			end
@@ -260,7 +260,7 @@ end)
 
 run(function()
 	local SlowBeast
-	
+
 	SlowBeast = vape.Categories.Blatant:CreateModule({
 		Name = 'SlowBeast',
 		Function = function(callback)
@@ -272,7 +272,7 @@ run(function()
 							rem:FireServer('Jumped')
 						end
 					end
-	
+
 					task.wait(0.1)
 				until not SlowBeast.Enabled
 			end
@@ -283,7 +283,7 @@ end)
 
 run(function()
 	local SpamBeast
-	
+
 	SpamBeast = vape.Categories.Blatant:CreateModule({
 		Name = 'SpamBeast',
 		Function = function(callback)
@@ -295,7 +295,7 @@ run(function()
 							rem:FireServer('Input')
 						end
 					end
-	
+
 					task.wait(0.1)
 				until not SpamBeast.Enabled
 			end
@@ -313,7 +313,7 @@ run(function()
 	local Reference = {}
 	local Folder = Instance.new('Folder')
 	Folder.Parent = vape.holder
-	
+
 	local function Added(computer)
 		local screen = computer:FindFirstChild('Screen')
 		local cham = Instance.new('Highlight')
@@ -325,44 +325,44 @@ run(function()
 		cham.OutlineTransparency = OutlineTransparency.Value
 		cham.Parent = Folder
 		cham.Enabled = screen.Color ~= Color3.fromRGB(40, 127, 71)
-	
+
 		ComputerESP:Clean(screen:GetPropertyChangedSignal('Color'):Connect(function()
 			cham.Enabled = screen.Color ~= Color3.fromRGB(40, 127, 71)
 		end))
-	
+
 		Reference[computer] = cham
 	end
-	
+
 	local function Removed(computer)
 		if Reference[computer] then
 			if vape.ThreadFix then
 				setthreadidentity(8)
 			end
-	
+
 			Reference[computer]:Destroy()
 			Reference[computer] = nil
 		end
 	end
-	
+
 	local function MapAdded(map)
 		local status = replicatedStorage.GameStatus
 		if status.Value:find('LOADING') or status.Value:find('START') then
 			repeat
 				task.wait()
 			until not (status.Value:find('LOADING') or status.Value:find('START')) or not ComputerESP.Enabled
-	
+
 			if not ComputerESP.Enabled then
 				return
 			end
 		end
-	
+
 		for _, v in map:GetChildren() do
 			if v.Name == 'ComputerTable' then
 				task.spawn(Added, v)
 			end
 		end
 	end
-	
+
 	ComputerESP = vape.Categories.Render:CreateModule({
 		Name = 'ComputerESP',
 		Function = function(callback)
@@ -374,7 +374,7 @@ run(function()
 					end
 					table.clear(Reference)
 				end))
-	
+
 				if mapobj then
 					task.spawn(MapAdded, mapobj)
 				end
@@ -433,7 +433,7 @@ end)
 run(function()
 	local AutoComputer
 	local connection, old
-	
+
 	local function getConnection(event)
 		local connection = getconnections(lstats.TimingGoalPosition.Changed)[1]
 		if not connection then
@@ -442,18 +442,18 @@ run(function()
 				task.wait()
 			until connection or not AutoComputer.Enabled
 		end
-	
+
 		return AutoComputer.Enabled and connection
 	end
-	
-	
+
+
 	AutoComputer = vape.Categories.Utility:CreateModule({
 		Name = 'AutoComputer',
 		Function = function(callback)
 			if callback then
 				connection = getConnection()
 				if not connection then return end
-	
+
 				old = hookfunction(connection.Function, function(...)
 					if lplr.TempPlayerStatsModule.TimingGoalPosition.Value > 0 then
 						replicatedStorage.RemoteEvent:FireServer('SetPlayerMinigameResult', true)

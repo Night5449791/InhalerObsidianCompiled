@@ -307,14 +307,14 @@ run(function()
 	local Part
 	local ShowTarget
 	local connections = {}
-	
+
 	local function disconnectAll()
 		for tool, connection in connections do
 			connection:Disconnect()
 			connections[tool] = nil
 		end
 	end
-	
+
 	-- entities carry their target part, so a renamed or missing part degrades to the root
 	-- instead of erroring inside EntityMouse
 	local function aimEntity()
@@ -325,7 +325,7 @@ run(function()
 			Players = true,
 			NPCs = true
 		})
-	
+
 		if not entity and part ~= 'RootPart' then
 			entity = entitylib.EntityMouse({
 				Range = FOV.Value,
@@ -334,36 +334,36 @@ run(function()
 				NPCs = true
 			})
 		end
-	
+
 		return entity
 	end
-	
+
 	SilentAim = vape.Categories.Combat:CreateModule({
 		Name = 'SilentAim',
 		Function = function(callback)
 			disconnectAll()
-	
+
 			if not callback then return end
-	
+
 			repeat
 				local tool = redwood.meleeTool()
 				if tool and not connections[tool] then
 					connections[tool] = tool.Activated:Connect(function()
 						if not SilentAim.Enabled then return end
-	
+
 						local entity = aimEntity()
 						if not entity then return end
 						if not redwood.attack(entity, Part.Value) then return end
-	
+
 						if ShowTarget.Enabled then
 							targetinfo.Targets[entity] = os.clock() + 1
 						end
 					end)
 				end
-	
+
 				task.wait(1)
 			until not SilentAim.Enabled or vape.Loaded == nil
-	
+
 			disconnectAll()
 		end,
 		Tooltip = 'Adds a melee hit on the closest target inside the FOV every time you attack'
@@ -381,7 +381,7 @@ run(function()
 	ShowTarget = SilentAim:CreateToggle({
 		Name = 'Show target info'
 	})
-	
+
 end)
 
 run(function()
@@ -389,37 +389,37 @@ run(function()
 	local Distance
 	local OnArrest
 	local OnlyPrisoners
-	
+
 	AutoReset = vape.Categories.Blatant:CreateModule({
 		Name = 'AutoReset',
 		Function = function(callback)
 			if not callback then return end
-	
+
 			-- the server drops Reset calls that arrive while a respawn is already pending, so
 			-- the loop only fires once and then waits for the new character to spawn
 			local lastReset = 0
-	
+
 			repeat
 				local character = lplr.Character
 				local humanoid = redwood.humanoid(character)
 				local alive = humanoid ~= nil and humanoid.Health > 0
 				local reset = false
-	
+
 				if alive and os.clock() - lastReset > 1 then
 					reset = OnArrest.Enabled and redwood.hasState(character, 'ArrestCurrent')
-	
+
 					if not reset and Distance.Value > 0 then
 						if not OnlyPrisoners.Enabled or redwood.isTeam(lplr, redwood.Teams.Prisoners) or redwood.isTeam(lplr, redwood.Teams.Fugitive) then
 							reset = redwood.nearestPlayer(redwood.Teams.Guards, Distance.Value) ~= nil
 						end
 					end
-	
+
 					if reset then
 						redwood.fire('Reset')
 						lastReset = os.clock()
 					end
 				end
-	
+
 				task.wait(reset and 0.5 or 0.1)
 			until not AutoReset.Enabled or vape.Loaded == nil
 		end,
@@ -444,7 +444,7 @@ run(function()
 		Default = true,
 		Tooltip = 'Only watches guards while you are a prisoner or a fugitive'
 	})
-	
+
 end)
 
 run(function()
@@ -453,7 +453,7 @@ run(function()
 	local Part
 	local Delay
 	local TeamCheck
-	
+
 	-- picks the closest valid target once per tick instead of attacking everyone in range:
 	-- one InflictTarget per swing is what the server expects, extra calls are wasted
 	-- bandwidth and trip the Adonis rate checks
@@ -471,22 +471,22 @@ run(function()
 				end
 			end
 		end
-	
+
 		return best
 	end
-	
+
 	Killaura = vape.Categories.Blatant:CreateModule({
 		Name = 'Killaura',
 		Function = function(callback)
 			if not callback then return end
-	
+
 			local swingAt = 0
-	
+
 			repeat
 				local tool = redwood.meleeTool()
 				local character = lplr.Character
 				local root = character and character:FindFirstChild('HumanoidRootPart')
-	
+
 				if tool and root and os.clock() >= swingAt then
 					local target = closestTarget(root, Range.Value, TeamCheck.Enabled)
 					if target then
@@ -494,7 +494,7 @@ run(function()
 						swingAt = os.clock() + Delay.Value
 					end
 				end
-	
+
 				task.wait(0.05)
 			until not Killaura.Enabled or vape.Loaded == nil
 		end,
@@ -529,7 +529,7 @@ run(function()
 		Default = true,
 		Tooltip = 'Skips teammates and friends'
 	})
-	
+
 end)
 
 run(function()
@@ -537,7 +537,7 @@ run(function()
 	local Color
 	local ColorTeam
 	local highlights = {}
-	
+
 	local function removeHighlight(character)
 		local highlight = highlights[character]
 		if highlight then
@@ -545,24 +545,24 @@ run(function()
 			highlights[character] = nil
 		end
 	end
-	
+
 	local function clearHighlights()
 		for character in highlights do
 			removeHighlight(character)
 		end
 		table.clear(highlights)
 	end
-	
+
 	local function highlightColor(character)
 		if ColorTeam.Enabled then
 			local plr = playersService:GetPlayerFromCharacter(character)
 			local team = plr and plr.Team
 			if team then return team.TeamColor.Color end
 		end
-	
+
 		return Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
 	end
-	
+
 	local function updateColor()
 		for character, highlight in highlights do
 			local color = highlightColor(character)
@@ -570,20 +570,20 @@ run(function()
 			highlight.OutlineColor = color
 		end
 	end
-	
+
 	CuffedESP = vape.Categories.Render:CreateModule({
 		Name = 'CuffedESP',
 		Function = function(callback)
 			clearHighlights()
-	
+
 			if not callback then return end
-	
+
 			-- characters that die or respawn leave the world without notifying us, so the
 			-- per character highlight is dropped as soon as its adornee is gone
 			local removed = workspace.ChildRemoved:Connect(function(child)
 				removeHighlight(child)
 			end)
-	
+
 			repeat
 				for _, plr in playersService:GetPlayers() do
 					local character = plr.Character
@@ -592,7 +592,7 @@ run(function()
 						local alive = humanoid and humanoid.Health > 0
 						local cuffed = alive and redwood.hasState(character, 'Handcuffed_')
 						local highlight = highlights[character]
-	
+
 						if cuffed and not highlight then
 							highlight = Instance.new('Highlight')
 							local color = highlightColor(character)
@@ -613,17 +613,17 @@ run(function()
 						end
 					end
 				end
-	
+
 				for character in highlights do
 					local plr = playersService:GetPlayerFromCharacter(character)
 					if not plr or plr.Character ~= character then
 						removeHighlight(character)
 					end
 				end
-	
+
 				task.wait(0.5)
 			until not CuffedESP.Enabled or vape.Loaded == nil
-	
+
 			removed:Disconnect()
 			clearHighlights()
 		end,
@@ -642,14 +642,14 @@ run(function()
 		Name = 'Use team color',
 		Tooltip = 'Tints the highlight with the cuffed player team colour'
 	})
-	
+
 end)
 
 run(function()
 	local AutoJoinTeam
 	local Team
 	local Retry
-	
+
 	-- the team chooser buttons carry an ObjectValue named Team pointing at game.Teams.<name>,
 	-- and the game invokes ChangeTeam:InvokeServer(team, button name)
 	local function teamButtonName(teamName)
@@ -658,7 +658,7 @@ run(function()
 		local holder = intro and intro:FindFirstChild('Frame')
 		local buttons = holder and holder:FindFirstChild('Buttons')
 		if not buttons then return end
-	
+
 		for _, button in buttons:GetChildren() do
 			local value = button:FindFirstChild('Team')
 			if value and value:IsA('ObjectValue') and value.Value and value.Value.Name == teamName then
@@ -666,24 +666,24 @@ run(function()
 			end
 		end
 	end
-	
+
 	local function joinTeam(teamName)
 		local team = game.Teams:FindFirstChild(teamName)
 		if not team then return end
-	
+
 		return redwood.invoke('ChangeTeam', team, teamButtonName(teamName) or teamName)
 	end
-	
+
 	AutoJoinTeam = vape.Categories.Utility:CreateModule({
 		Name = 'AutoJoinTeam',
 		Function = function(callback)
 			if not callback then return end
-	
+
 			repeat
 				if redwood.team(lplr) ~= Team.Value then
 					joinTeam(Team.Value)
 				end
-	
+
 				task.wait(Retry.Value)
 			until not AutoJoinTeam.Enabled or vape.Loaded == nil
 		end,
@@ -709,5 +709,5 @@ run(function()
 		end,
 		Tooltip = 'The server rejects teams that are not balanced, so the request is repeated'
 	})
-	
+
 end)

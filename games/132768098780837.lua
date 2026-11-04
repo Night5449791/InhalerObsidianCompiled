@@ -204,15 +204,15 @@ end
 run(function()
 	local overParams = RaycastParams.new()
 	overParams.RespectCanCollide = true
-	
+
 	local function clampVec(vec, max)
 		if vec.Magnitude > max then
 			return vec.Unit == vec.Unit and vec.Unit * max or Vector3.zero
 		end
-	
+
 		return vec
 	end
-	
+
 	AnticheatBypass = vape.Categories.Blatant:CreateModule({
 		Name = 'AnticheatBypass',
 		Function = function(callback)
@@ -225,7 +225,7 @@ run(function()
 				bypassRoot.Transparency = 1
 				bypassRoot.Parent = workspace.CurrentCamera
 				AnticheatBypass:Clean(bypassRoot)
-	
+
 				local oldcf, oldvelo
 				local bindKey = game:GetService('HttpService'):GenerateGUID(true)
 				runService:BindToRenderStep(bindKey, 0, function()
@@ -233,21 +233,21 @@ run(function()
 						entitylib.character.RootPart.CFrame = oldcf
 					end
 				end)
-	
+
 				AnticheatBypass:Clean(function()
 					runService:UnbindFromRenderStep(bindKey)
 				end)
-	
+
 				AnticheatBypass:Clean(entitylib.Events.LocalAdded:Connect(function()
 					oldcf = nil
 				end))
-	
+
 				AnticheatBypass:Clean(runService.PreAnimation:Connect(function()
 					if entitylib.isAlive and oldcf and entitylib.character.RootPart.Position ~= oldcf.Position then
 						oldcf = nil
 					end
 				end))
-	
+
 				local tpTimer = 0
 				local fallTimer = 0
 				AnticheatBypass:Clean(runService.Heartbeat:Connect(function(dt)
@@ -257,7 +257,7 @@ run(function()
 							bypassRoot.CFrame = root.CFrame
 						end
 						oldcf = root.CFrame
-	
+
 						local diff = (oldcf.Position - bypassRoot.Position) * Vector3.new(1, 0, 1)
 						local united = diff.Unit
 						united = united == united and diff.Magnitude > 0.1 and united * entitylib.character.Humanoid.WalkSpeed or Vector3.zero
@@ -267,7 +267,7 @@ run(function()
 							bypassRoot.CFrame += clampVec(diff, entitylib.character.Humanoid.WalkSpeed)
 							tpTimer = os.clock()
 						end
-	
+
 						overParams.CollisionGroup = root.CollisionGroup
 						overParams.FilterDescendantsInstances = {lplr.Character, gameCamera}
 						local flyCheck = workspace:Raycast(bypassRoot.Position, Vector3.new(0, -8, 0), overParams)
@@ -279,7 +279,7 @@ run(function()
 						else
 							fallTimer = 0
 						end
-	
+
 						root.CFrame = bypassRoot.CFrame
 						if root.AssemblyLinearVelocity.Magnitude < 0.1 then
 							root.AssemblyLinearVelocity += Vector3.new(0, -0.1, 0)
@@ -309,31 +309,31 @@ run(function()
 		Platform.Size = Vector3.new(4, 1, 4)
 		Platform.Transparency = 1
 		Platform.Parent = nil
-	
+
 		Fly = vape.Categories.Blatant:CreateModule({
 			Name = 'Fly',
 			Function = function(callback)
 				if Platform then
 					Platform.Parent = callback and gameCamera or nil
 				end
-	
+
 				if callback then
 					if not AnticheatBypass.Enabled then
 						AnticheatBypass:Toggle()
 					end
-	
+
 					Fly:Clean(runService.PreSimulation:Connect(function(dt)
 						if entitylib.isAlive then
 							applySpeed(Value.Value, dt)
 							Platform.CFrame = down ~= 0 and CFrame.identity or entitylib.character.RootPart.CFrame + Vector3.new(0, -(entitylib.character.HipHeight + 0.5), 0)
 						end
 					end))
-	
+
 					down = 0
 					Fly:Clean(DownKey.Triggered:Connect(function(isDown)
 						down = isDown and -1 or 0
 					end))
-	
+
 					if inputService.TouchEnabled then
 						pcall(function()
 							local jumpButton = lplr.PlayerGui.TouchGui.TouchControlFrame.JumpButton
@@ -383,7 +383,7 @@ run(function()
 	local ParticleSize
 	local Face
 	local Particles, Boxes, AttackDelay = {}, {}, {}
-	
+
 	local function getSword()
 		local inv = getInventory()
 		for _, tool in inv do
@@ -392,16 +392,16 @@ run(function()
 			end
 		end
 	end
-	
+
 	local function getAttackData()
 		if Mouse.Enabled then
 			if not inputService:IsMouseButtonPressed(0) then return false end
 		end
-	
+
 		local tool = getSword()
 		return tool or nil, tool
 	end
-	
+
 	Killaura = vape.Categories.Blatant:CreateModule({
 		Name = 'Killaura',
 		Function = function(callback)
@@ -410,7 +410,7 @@ run(function()
 					isAttacking = false
 					local tool = getAttackData()
 					local attacked = {}
-	
+
 					if tool then
 						local plrs = entitylib.AllPosition({
 							Range = AttackRange.Value,
@@ -421,42 +421,42 @@ run(function()
 							NPCs = Targets.NPCs.Enabled,
 							Limit = Max.Value
 						})
-	
+
 						if #plrs > 0 then
 							isAttacking = true
 							local selfpos = entitylib.character.RootPart.Position
 							local localfacing = entitylib.character.RootPart.CFrame.LookVector * Vector3.new(1, 0, 1)
-	
+
 							if tool.Parent ~= lplr.Character then
 								entitylib.character.Humanoid:EquipTool(tool)
 							end
-	
+
 							for _, v in plrs do
 								local delta = (v.RootPart.Position - selfpos)
 								local angle = math.acos(localfacing:Dot((delta * Vector3.new(1, 0, 1)).Unit))
 								if angle > (math.rad(AngleSlider.Value) / 2) then continue end
-	
+
 								table.insert(attacked, {
 									Entity = v,
 									Check = delta.Magnitude > AttackRange.Value and BoxSwingColor or BoxAttackColor
 								})
 								targetinfo.Targets[v] = os.clock() + 1
-	
+
 								if (os.clock() - (BlockTimes[v.Character] or 0)) < 0.3 then
 									continue
 								end
-	
+
 								if (os.clock() - (AttackDelay[v.Character] or 0) < 0.03) then
 									continue
 								end
-	
+
 								replicatedStorage.GameEvents.CombatRemotes.Combat_FeintSwing:FireServer()
 								replicatedStorage.GameEvents.CombatRemotes.Combat_RequestAttack:FireServer(tool:GetAttribute('WeaponType'), v.Character)
 								AttackDelay[v.Character] = os.clock()
 							end
 						end
 					end
-	
+
 					for i, v in Boxes do
 						v.Adornee = attacked[i] and attacked[i].Entity.RootPart or nil
 						if v.Adornee then
@@ -464,26 +464,26 @@ run(function()
 							v.Transparency = 1 - attacked[i].Check.Opacity
 						end
 					end
-	
+
 					for i, v in Particles do
 						v.Position = attacked[i] and attacked[i].Entity.RootPart.Position or Vector3.new(9e9, 9e9, 9e9)
 						v.Parent = attacked[i] and gameCamera or nil
 					end
-	
+
 					if Face.Enabled and attacked[1] then
 						local vec = attacked[1].Entity.RootPart.Position * Vector3.new(1, 0, 1)
 						entitylib.character.RootPart.CFrame = CFrame.lookAt(entitylib.character.RootPart.Position, Vector3.new(vec.X, entitylib.character.RootPart.Position.Y + 0.01, vec.Z))
 					end
-	
+
 					task.wait(0.016)
 				until not Killaura.Enabled
 			else
 				isAttacking = false
-	
+
 				for _, v in Boxes do
 					v.Adornee = nil
 				end
-	
+
 				for _, v in Particles do
 					v.Parent = nil
 				end
@@ -656,7 +656,7 @@ run(function()
 	local AutoJump
 	local AutoJumpCustom
 	local AutoJumpValue
-	
+
 	Speed = vape.Categories.Blatant:CreateModule({
 		Name = 'Speed',
 		Function = function(callback)
@@ -664,13 +664,13 @@ run(function()
 				if not AnticheatBypass.Enabled then
 					AnticheatBypass:Toggle()
 				end
-	
+
 				Speed:Clean(runService.PreSimulation:Connect(function(dt)
 					if entitylib.isAlive and not Fly.Enabled then
 						local state = entitylib.character.Humanoid:GetState()
 						if state == Enum.HumanoidStateType.Climbing then return end
 						applySpeed(Value.Value, dt)
-	
+
 						if AutoJump.Enabled and entitylib.character.Humanoid.FloorMaterial ~= Enum.Material.Air and movevec ~= Vector3.zero then
 							if AutoJumpCustom.Enabled then
 								local velocity = entitylib.character.RootPart.Velocity * Vector3.new(1, 0, 1)
@@ -724,7 +724,7 @@ end)
 
 run(function()
 	local AutoLeave
-	
+
 	AutoLeave = vape.Categories.Utility:CreateModule({
 		Name = 'AutoLeave',
 		Function = function(callback)
@@ -740,7 +740,7 @@ end)
 
 run(function()
 	local AutoQueue
-	
+
 	AutoQueue = vape.Categories.Utility:CreateModule({
 		Name = 'AutoQueue',
 		Function = function(callback)
@@ -760,21 +760,21 @@ run(function()
 	local AutoToxic
 	local GG
 	local Toggles, Lists, Cloned, Presets = {}, {}, {}, {}
-	
+
 	local function sendMessage(name, obj, default)
 		local message = default
 		if #Lists[name].ListEnabled > 0 then
 			if #Cloned[name] <= 0 then
 				Cloned[name] = table.clone(Lists[name].ListEnabled)
 			end
-	
+
 			local entry = Random.new():NextInteger(1, #Cloned[name])
 			message = Cloned[name][entry]
 			table.remove(Cloned[name], entry)
 		end
-	
+
 		if not message then return end
-	
+
 		message = message and message:gsub('<obj>', obj or '') or ''
 		if textChatService.ChatVersion == Enum.ChatVersion.TextChatService then
 			if textChatService:CanUserChatAsync(lplr.UserId) then
@@ -786,7 +786,7 @@ run(function()
 			replicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(message, 'All')
 		end
 	end
-	
+
 	AutoToxic = vape.Categories.Utility:CreateModule({
 		Name = 'AutoToxic',
 		Function = function(callback)
@@ -804,7 +804,7 @@ run(function()
 								replicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer('gg', 'All')
 							end
 						end
-	
+
 						if lplr.Team and lplr.Team.Name == data.teamId then
 							if Toggles.Win.Enabled then
 								sendMessage('Win', nil, 'yall garbage')
@@ -839,7 +839,7 @@ run(function()
 			end
 		})
 	end
-	
+
 	pcall(function()
 		for _, group in textChatService:GetPresetsAsync().categoryGroups do
 			for _, category in group.categories do
@@ -867,7 +867,7 @@ run(function()
 	local InstantBreak
 	local LimitItem
 	local customlist, parts = {}, {}
-	
+
 	local function getPick()
 		local inv = getInventory()
 		for _, tool in inv do
@@ -876,7 +876,7 @@ run(function()
 			end
 		end
 	end
-	
+
 	local function attemptBreak(tab, localPosition, tool)
 		if not tab then return end
 		for _, v in tab do
@@ -884,7 +884,7 @@ run(function()
 				if tool.Parent ~= lplr.Character then
 					entitylib.character.Humanoid:EquipTool(tool)
 				end
-	
+
 				if v:HasTag('BedWarsX_BedSpawn') then
 					local notCovered = false
 					for _, normal in Enum.NormalId:GetEnumItems() do
@@ -895,7 +895,7 @@ run(function()
 							end
 						end
 					end
-	
+
 					if notCovered then
 						bw.RemoteIndex.Block_AttemptHit:FireServer({
 							camPos = localPosition,
@@ -904,7 +904,7 @@ run(function()
 						})
 					else
 						local aboveBlock = blocks[v.Position // 3 + Vector3.new(0, 1, 0)]
-	
+
 						if aboveBlock then
 							bw.RemoteIndex.Block_AttemptHit:FireServer({
 								camPos = localPosition,
@@ -913,35 +913,35 @@ run(function()
 							})
 						end
 					end
-	
+
 					task.wait(0.15)
 				else
 					bw.RemoteIndex.Mine_AttemptHit:FireServer(v)
 				end
-	
+
 				task.wait(0.05)
 				return true
 			end
 		end
-	
+
 		return false
 	end
-	
+
 	Breaker = vape.Categories.World:CreateModule({
 		Name = 'Breaker',
 		Function = function(callback)
 			if callback then
 				local beds = collection('BedWarsX_BedSpawn', Breaker)
 				local generators = collection('BedWarsX_Resource', Breaker)
-	
+
 				repeat
 					task.wait(1 / UpdateRate.Value)
 					if not Breaker.Enabled then break end
-	
+
 					local tool = getPick()
 					if entitylib.isAlive and tool and not isAttacking then
 						local localPosition = bypassRoot and bypassRoot.Position or entitylib.character.RootPart.Position
-	
+
 						if attemptBreak(beds, localPosition, tool) then continue end
 						if attemptBreak(generators, localPosition, tool) then continue end
 					end
@@ -980,7 +980,7 @@ run(function()
 	local FastBreak
 	local Value
 	local old
-	
+
 	FastBreak = vape.Categories.World:CreateModule({
 		Name = 'FastBreak',
 		Function = function(callback)
@@ -1018,7 +1018,7 @@ run(function()
 			['pickaxe_diamond'] = 'Diamond Armor'
 		}
 	}
-	
+
 	local function buyCategory(ladder, default)
 		local tierItems = {}
 		for _, item in bw.ShopConfig.Items do
@@ -1026,11 +1026,11 @@ run(function()
 				table.insert(tierItems, item)
 			end
 		end
-	
+
 		table.sort(tierItems, function(a, b)
 			return (a.tier or -1) < (b.tier or -1)
 		end)
-	
+
 		local nextTier = default and tierItems[1] or nil
 		for _, item in tierItems do
 			if bw.Inventory.items[item.id] then
@@ -1038,31 +1038,31 @@ run(function()
 				break
 			end
 		end
-	
+
 		if nextTier then
 			for index, item in {'Block', 'Gold', 'Diamond'} do
 				if (nextTier.cost and nextTier.cost[item] or 0) > (bw.Inventory[index == 1 and 'blocks' or item:lower()] or 0) then
 					return false
 				end
 			end
-	
+
 			if requirements[ladder] and requirements[ladder][nextTier.id] and not bw.Inventory.items[requirements[ladder][nextTier.id]] then
 				return false
 			end
-	
+
 			bw.RemoteIndex.Shop_Purchase:InvokeServer({itemId = nextTier.id})
 			return true
 		end
-	
+
 		return false
 	end
-	
+
 	AutoBuy = vape.Categories.Inventory:CreateModule({
 		Name = 'AutoBuy',
 		Function = function(callback)
 			if callback then
 				shops = collection('BedWarsX_ShopNPC')
-	
+
 				repeat
 					if entitylib.isAlive then
 						local localPosition = entitylib.character.RootPart.Position
@@ -1075,7 +1075,7 @@ run(function()
 							end
 						end
 					end
-	
+
 					task.wait(0.2)
 				until not AutoBuy.Enabled
 			end
@@ -1087,14 +1087,14 @@ end)
 run(function()
 	local HideShield
 	local parts = {}
-	
+
 	local function localAdded(char)
 		local shield = char.Character:WaitForChild('ShieldModel', 10)
 		if shield then
 			parts = shield:QueryDescendants('BasePart')
 		end
 	end
-	
+
 	HideShield = vape.Legit:CreateModule({
 		Name = 'HideShield',
 		Function = function(callback)
@@ -1103,12 +1103,12 @@ run(function()
 				if entitylib.isAlive then
 					task.spawn(localAdded, entitylib.character)
 				end
-	
+
 				repeat
 					for _, v in parts do
 						v.Transparency = 1
 					end
-	
+
 					task.wait()
 				until not HideShield.Enabled
 			else
