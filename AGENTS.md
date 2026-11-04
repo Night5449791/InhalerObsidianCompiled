@@ -19,13 +19,14 @@ Section numbers are shared with `CODEBUDDY-OBSIDIAN.md` — keep them stable.
 | UI library | Vape's `components/*` | **Obsidian** + its `ThemeManager`/`SaveManager` addons |
 | game modules | unchanged | **unchanged** |
 | libraries | unchanged | **partly rewritten** (`§6`) |
-| build | CI on push to `main` | **local only**, never CI |
+| build | CI on push to `main` | **local only**, compiled by hand and then pushed (`§8.6`) |
 
 The fork is CC BY 4.0; upstream Vape is CC0 1.0; Obsidian is by deivid (see `ObsidianUI.md` §1).
 
 Rules for agents:
 
-- **Never hand-edit a file in this repo.** It is rebuilt from `src/` and any edit is lost on the next build. Fix `InhalerV4ForRoblox/src/` instead.
+- **Never hand-edit a file in this repo.** It is rebuilt from `src/` and any edit is lost on the next build.
+- **The source tree is read-only during a build.** `InhalerV4ForRoblox/` is only *read* — `git status` there must be clean before and after, with nothing staged, committed or pushed. A build never has a reason to touch it: if the output looks wrong, fix the bundler or this port, not the source. Changing the source is a separate, deliberate task the user has to ask for (`§8.0`).
 - Read a file before reasoning about it. Never assume a module exists — check the build output.
 - Change only what was asked. No drive-by refactors.
 - Match Vape's style in anything that survives into the output: **tabs, no semicolons, no collapsed multi-argument calls**, localize aggressively (`InhalerV4ForRoblox/AGENTS.md` §10).
@@ -231,6 +232,7 @@ Two Obsidian behaviours that will bite:
 That is all seven files in `src/libraries/`; none of them draw anything. The UI libraries live in a **different** folder, `src/guis/new/libraries/` — `color`, `getfontbounds`, `getvapeasset`, `tween`, `uipallet` — and those are the ones that must be re-pointed at Obsidian:
 
 - **`uipallet`** → `Library.Scheme` (`BackgroundColor`, `MainColor`, `AccentColor`, `OutlineColor`, `FontColor`, `RedColor`, `DarkColor`, `WhiteColor`). Do not keep a second palette; theme changes must reach the UI.
+  **Do not carry the Vape build's font over.** `InhalerV4ForRoblox/src/guis/new/libraries/uipallet.lua` sets `Font = Font.fromEnum(Enum.Font.Arimo)` for the Vape click GUI; the Obsidian build must keep Obsidian's own font (`Library.Scheme.Font`, the `Window.Font` default `Enum.Font.Code`, or whatever the theme supplies). Copying `Arimo`/`Arial`/`Font.fromEnum`/`Font.new('rbxasset://fonts/families/…')` into `guis/new.lua` is a bug, not a port: Obsidian owns its typography, and a hard-coded family overrides the theme picker. The same applies to the two `CreateFont` defaults in `overlays/TextGUI.lua` and `overlays/TargetInfo.lua` — leave them at the Vape default in the source and drop the option from the Obsidian port if it has no equivalent.
 - **`color`** → keep `vape.Color` / `vape.TextColor` working (game modules call them); reimplement on top of the scheme colours above rather than a private table.
 - **`tween`** → `TweenInfo` against the Obsidian frame, or Obsidian's own animations.
 - **`getvapeasset`** → `Library.ImageManager` / `Library:GetCustomIcon`; keep the inline `rbxassetid://` fallback and keep returning `''` on a miss.
@@ -256,6 +258,23 @@ That is all seven files in `src/libraries/`; none of them draw anything. The UI 
 ## 8. Building this from scratch — you are the bundler
 
 There is **no** `InhalerBundlerObsidian` in the workspace and no CI. To produce this repo you reconstruct the bundler. Read `../InhalerBundler/` first — it is ~200 lines and it *is* the specification.
+
+**Do not create a permanent bundler either.** You are the bundler: run the steps below by hand (or with throwaway one-off commands and scratch scripts outside both repositories), then throw the scaffolding away. No `InhalerBundlerObsidian/` folder, no `package.json`, no build tooling checked in anywhere. The one exception is a vendored `vendor/Obsidian/` if you need it to keep the build reproducible — that is content, not a build system.
+
+### 8.0 `InhalerV4ForRoblox/` is read-only for a build
+
+A build **reads** the source tree and writes only into `InhalerObsidianCompiled/`. Nothing else.
+
+| Action | Allowed during a build |
+|---|---|
+| `cat` / `grep` / `Read` a file under `InhalerV4ForRoblox/` | yes |
+| `cp` / `node` / `sed` **into a temp dir** derived from it | yes |
+| edit, create, delete, `git add`, `git commit`, `git push` **in** `InhalerV4ForRoblox/` | **no** |
+| `git status` there printing anything but "clean" | **stop and report** |
+
+Run `git status --short` in `../InhalerV4ForRoblox` **before** starting and **after** the build. Both must be empty. A non-empty result means the build was not read-only — report it to the user instead of committing the output, because you would be shipping a build whose source no longer matches `main`.
+
+The only legitimate reason to touch the source is a user request to change gameplay or GUI code. That is a normal source task (`InhalerV4ForRoblox/AGENTS.md`), not part of compiling this repo, and it is never implied by "compile the Obsidian build".
 
 ### 8.1 What the reference bundler does
 
@@ -354,6 +373,27 @@ InhalerObsidianCompiled/
 4. `grep -c "watermark" loader.lua` ≥ 1 — the cache invalidation still works.
 5. The four runtime paths work: a fresh inject, a re-inject (no stacked window), a teleport reload, `Uninject`.
 6. Diff the tree against `§3` — a missing `games/<PlaceId>.lua` means a product silently stops loading.
+
+### 8.6 Commit and push automatically, every time
+
+Once §8.5 passes, **commit and push without asking** — a compiled build that only exists on the local disk is a build nobody can inject. The user's "compile the Obsidian build" already includes this step.
+
+```bash
+cd InhalerObsidianCompiled
+git add -A
+git commit -m "compiled obsidian build"
+git push origin main
+```
+
+Rules:
+
+- **Use the proxy** the workspace expects: `export https_proxy=http://localhost:7890 http_proxy=http://localhost:7890` before `git push`. It is the only network path in this machine.
+- **One commit per build.** Do not squash several builds together and do not amend an already pushed commit.
+- **Never force-push**, never rebase a pushed history, never `git reset --hard` on anything already on `origin`.
+- The message stays short and mechanical (`compiled obsidian build`, or `compiled obsidian build: <what changed>` when the source diff is interesting). This repo is output; the story lives in `InhalerV4ForRoblox/UPDATES.md`.
+- **`AGENTS.md` itself belongs in this repo and is committed with everything else.** It is the one hand-maintained file here — it documents the build, so a build that changes the process should carry the doc change with it.
+- After pushing, verify: `git rev-parse HEAD origin/main` must print the same sha. Report the commit sha to the user.
+- `git push` failing on `credential-manager` is a harmless local-helper warning; a non-zero exit from the `push` line itself is not — surface the real error instead of retrying blindly.
 
 ## 9. Conventions
 
