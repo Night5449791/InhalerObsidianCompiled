@@ -6,7 +6,7 @@ Guidance for any AI agent (Claude, Codex, Gemini, Copilot, Cursor, …) working 
 
 Section numbers are shared with `CODEBUDDY-OBSIDIAN.md` — keep them stable.
 
-**`Appendix A` is the complete Obsidian API reference** (window, tabs, groupboxes, every element, notifications, dialogs, overlays, keybind menu, icons, ThemeManager, SaveManager, gotchas). Read §4–§6 here for what *Inhaler* needs from Obsidian, then look up the exact signature in `Appendix A`.
+**Read `ObsidianUI.md` before writing any Obsidian UI code.** It is the complete, unabridged Obsidian API reference (2035 lines: window, tabs, groupboxes, tabboxes, dependency boxes, every element, library core, loading screen, notifications, dialogs, overlays, keybind menu, icons, ThemeManager, SaveManager, options registry, deprecated APIs, gotchas, quick-start template) and it sits next to this file in the repo root. `Appendix A` below is a condensed copy of it — good enough to recognise an API, **not** good enough to author against. Whenever you are about to write or change a `Library:` / `Window:` / `Tab:` / `Groupbox:` / element call, confirm the exact signature, defaults and argument order in `ObsidianUI.md` first; guessing an argument order is the most common way an Obsidian port breaks at runtime with no useful error.
 
 ## 0. What this repo is
 
@@ -198,6 +198,8 @@ A module entry is `{Enabled, Visible, Bind = {Keys, Mobile, Hold}, Options = {..
 **Obsidian's `SaveManager` is not a substitute.** It serialises *its* options to *its* folder. Inhaler's profile format must stay as-is or every existing user loses their config. If you use `SaveManager` at all, use it only for the Obsidian-native theme/config section, never for module state.
 
 ## 5. UI mapping rules
+
+**Read `ObsidianUI.md` (repo root, 2035 lines) before authoring anything in this section.** The table below only says *which* Obsidian concept to reach for; `ObsidianUI.md` says *how to call it* — exact signatures, defaults, argument order, and the gotchas per element. Treat the two as a pair: map here, look up there, then write. `Appendix A` at the bottom of this file is the same material compressed, and it is for orientation only — when they disagree, `ObsidianUI.md` wins.
 
 | Vape concept | Obsidian |
 |---|---|
