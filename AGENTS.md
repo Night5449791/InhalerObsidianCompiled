@@ -8,6 +8,8 @@ Section numbers are shared with `CODEBUDDY-OBSIDIAN.md` — keep them stable.
 
 **Read `ObsidianUI.md` before writing any Obsidian UI code.** It is the complete, unabridged Obsidian API reference (2035 lines: window, tabs, groupboxes, tabboxes, dependency boxes, every element, library core, loading screen, notifications, dialogs, overlays, keybind menu, icons, ThemeManager, SaveManager, options registry, deprecated APIs, gotchas, quick-start template) and it sits next to this file in the repo root. `Appendix A` below is a condensed copy of it — good enough to recognise an API, **not** good enough to author against. Whenever you are about to write or change a `Library:` / `Window:` / `Tab:` / `Groupbox:` / element call, confirm the exact signature, defaults and argument order in `ObsidianUI.md` first; guessing an argument order is the most common way an Obsidian port breaks at runtime with no useful error.
 
+**Read `VapeClickGUI.md` before porting any component.** It documents the *other* UI layer — the hand-rolled Vape click GUI in `InhalerV4ForRoblox/src/guis/new/` — component by component: the `vape` root object and every `vape:*` method, the `components.<Name> = function(props, children, api)` shape and the `vape.Components` metatable, every container, every `CreateXxx` option with the exact `props` fields it reads, and the two profile JSON blobs that make up the save format. It also carries the Vape → Obsidian mapping table. Use it to know **what the source actually does** before re-expressing it here: the save shapes are a wire format, so a port that guesses at field names silently resets every user's settings.
+
 ## 0. What this repo is
 
 `Night5449791/InhalerObsidianCompiled` — the **Obsidian-UI build of Inhaler V4**. Same game modules, same whitelist, same backend; the entire GUI is re-implemented on top of [Obsidian](https://github.com/deividcomsono/Obsidian) instead of Vape's own widget library.
@@ -117,6 +119,8 @@ Naming rules, inherited from the bundler:
 ## 4. The GUI port — what `vape` must still provide
 
 `guis/new.lua` returns the `vape` table and `main.lua` assigns it to `shared.vape`. Every game module and every option in `src/games/**` calls into that table, so **the surface below is frozen**. Obsidian only replaces *how* each one is drawn.
+
+**`VapeClickGUI.md` is the companion to this section.** It is the reference for the source side: the original `vape` object, each container, each `CreateXxx` with the `props` fields it reads, and the exact save shapes. Port against it, not from memory — a field name guessed wrong here rewrites a wire format that every existing profile depends on.
 
 ### 4.1 Object root
 
