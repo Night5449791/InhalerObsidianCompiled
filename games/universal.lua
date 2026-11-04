@@ -1416,568 +1416,566 @@ run(function()
 	})
 end)
 
+local mouseClicked
 run(function()
-	local mouseClicked
-	run(function()
-		local SilentAim
-		local Target
-		local Mode
-		local Method
-		local RayMethod
-		local SchedulerPriority
-		local IgnoredScripts
-		local Range
-		local HitChance
-		local HeadshotChance
-		local AutoFire
-		local AutoFireShootDelay
-		local AutoFireMode
-		local AutoFirePosition
-		local Wallbang
-		local FunctionHook
-		local OthHook
-		local CircleColor
-		local CircleTransparency
-		local CircleFilled
-		local CircleObject
-		local Projectile
-		local ProjectileSpeed
-		local ProjectileGravity
-		local RaycastWhitelist = RaycastParams.new()
-		RaycastWhitelist.FilterType = Enum.RaycastFilterType.Include
-		local ProjectileRaycast = RaycastParams.new()
-		ProjectileRaycast.RespectCanCollide = true
-		local oldnamecall, oldhook, hookmethod
-		local rand = Random.new()
-		local clickDelay = os.clock()
-		local fireOffset = CFrame.new()
-		local didOth
+	local SilentAim
+	local Target
+	local Mode
+	local Method
+	local RayMethod
+	local SchedulerPriority
+	local IgnoredScripts
+	local Range
+	local HitChance
+	local HeadshotChance
+	local AutoFire
+	local AutoFireShootDelay
+	local AutoFireMode
+	local AutoFirePosition
+	local Wallbang
+	local FunctionHook
+	local OthHook
+	local CircleColor
+	local CircleTransparency
+	local CircleFilled
+	local CircleObject
+	local Projectile
+	local ProjectileSpeed
+	local ProjectileGravity
+	local RaycastWhitelist = RaycastParams.new()
+	RaycastWhitelist.FilterType = Enum.RaycastFilterType.Include
+	local ProjectileRaycast = RaycastParams.new()
+	ProjectileRaycast.RespectCanCollide = true
+	local oldnamecall, oldhook, hookmethod
+	local rand = Random.new()
+	local clickDelay = os.clock()
+	local fireOffset = CFrame.new()
+	local didOth
 
-		local function getMousePosition()
-			if inputService.TouchEnabled then
-				return gameCamera.ViewportSize / 2
-			end
-
-			return inputService:GetMouseLocation()
+	local function getMousePosition()
+		if inputService.TouchEnabled then
+			return gameCamera.ViewportSize / 2
 		end
 
-		local function getTarget(origin, obj)
-			if rand.NextNumber(rand, 0, 100) > (AutoFire.Enabled and 100 or HitChance.Value) then
-				return
-			end
+		return inputService:GetMouseLocation()
+	end
 
-			local targetPart = (rand.NextNumber(rand, 0, 100) < (AutoFire.Enabled and 100 or HeadshotChance.Value)) and 'Head' or 'RootPart'
-			local entity = entitylib['Entity'..Mode.Value]({
-				Range = Range.Value,
-				Wallcheck = Target.Walls.Enabled and (obj or true) or nil,
-				Part = targetPart,
-				Origin = origin,
-				Players = Target.Players.Enabled,
-				NPCs = Target.NPCs.Enabled
-			})
-
-			if entity then
-				targetinfo.Targets[entity] = os.clock() + 1
-
-				if Projectile.Enabled then
-					ProjectileRaycast.FilterDescendantsInstances = {gameCamera, entity.Character}
-					ProjectileRaycast.CollisionGroup = entity[targetPart].CollisionGroup
-				end
-			end
-
-			return entity, entity and entity[targetPart], origin
+	local function getTarget(origin, obj)
+		if rand.NextNumber(rand, 0, 100) > (AutoFire.Enabled and 100 or HitChance.Value) then
+			return
 		end
 
-		local Hooks = {
-			FindPartOnRayWithIgnoreList = {
-				Hook = workspace.FindPartOnRayWithIgnoreList,
-				Function = function(args)
-					if typeof(args[1]) ~= 'Ray' then
-						return
-					end
+		local targetPart = (rand.NextNumber(rand, 0, 100) < (AutoFire.Enabled and 100 or HeadshotChance.Value)) and 'Head' or 'RootPart'
+		local entity = entitylib['Entity'..Mode.Value]({
+			Range = Range.Value,
+			Wallcheck = Target.Walls.Enabled and (obj or true) or nil,
+			Part = targetPart,
+			Origin = origin,
+			Players = Target.Players.Enabled,
+			NPCs = Target.NPCs.Enabled
+		})
 
-					local entity, targetPart, origin = getTarget(args[1].Origin, {args[2]})
-					if not entity then
-						return
-					end
+		if entity then
+			targetinfo.Targets[entity] = os.clock() + 1
 
-					if Wallbang.Enabled then
-						return {
-							targetPart,
-							targetPart.Position,
-							targetPart.GetClosestPointOnSurface(targetPart, origin),
-							targetPart.Material
-						}
-					end
+			if Projectile.Enabled then
+				ProjectileRaycast.FilterDescendantsInstances = {gameCamera, entity.Character}
+				ProjectileRaycast.CollisionGroup = entity[targetPart].CollisionGroup
+			end
+		end
 
-					args[1] = Ray.new(origin, CFrame.lookAt(origin, targetPart.Position).LookVector * args[1].Direction.Magnitude)
+		return entity, entity and entity[targetPart], origin
+	end
+
+	local Hooks = {
+		FindPartOnRayWithIgnoreList = {
+			Hook = workspace.FindPartOnRayWithIgnoreList,
+			Function = function(args)
+				if typeof(args[1]) ~= 'Ray' then
+					return
 				end
-			},
-			Raycast = {
-				Hook = workspace.Raycast,
-				Function = function(args)
-					if typeof(args[1]) ~= 'Vector3' or typeof(args[2]) ~= 'Vector3' or args[3] and typeof(args[3]) ~= 'RaycastParams' then
-						return
-					end
 
-					if RayMethod.Value ~= 'All' and args[3] and args[3].FilterType ~= Enum.RaycastFilterType[RayMethod.Value] then
-						return
-					end
-
-					local entity, targetPart, origin = getTarget(args[1])
-					if not entity then
-						return
-					end
-
-					args[2] = CFrame.lookAt(origin, targetPart.Position).LookVector * args[2].Magnitude
-					if Wallbang.Enabled then
-						RaycastWhitelist.FilterDescendantsInstances = {targetPart}
-						args[3] = RaycastWhitelist
-					end
+				local entity, targetPart, origin = getTarget(args[1].Origin, {args[2]})
+				if not entity then
+					return
 				end
-			},
-			ScreenPointToRay = {
-				Hook = Instance.new('Camera').ScreenPointToRay,
-				Function = function(args)
-					if args[3] and type(args[3]) ~= 'number' then
-						return
-					end
 
-					local entity, targetPart, origin = getTarget(gameCamera.CFrame.Position)
-					if not entity then
-						return
-					end
-
-					local direction = CFrame.lookAt(origin, targetPart.Position)
-					if Projectile.Enabled then
-						local calc = prediction.SolveTrajectory(origin, ProjectileSpeed.Value, ProjectileGravity.Value, targetPart.Position, targetPart.Velocity, workspace.Gravity, entity.HipHeight, nil, ProjectileRaycast)
-						if not calc then
-							return
-						end
-
-						direction = CFrame.lookAt(origin, calc)
-					end
-
+				if Wallbang.Enabled then
 					return {
-						Ray.new(origin + (args[3] and direction.LookVector * args[3] or Vector3.zero), direction.LookVector)
+						targetPart,
+						targetPart.Position,
+						targetPart.GetClosestPointOnSurface(targetPart, origin),
+						targetPart.Material
 					}
 				end
-			},
-			Ray = {
-				Hook = Ray.new,
-				Function = function(args)
-					if typeof(args[1]) ~= 'Vector3' or typeof(args[2]) ~= 'Vector3' then
+
+				args[1] = Ray.new(origin, CFrame.lookAt(origin, targetPart.Position).LookVector * args[1].Direction.Magnitude)
+			end
+		},
+		Raycast = {
+			Hook = workspace.Raycast,
+			Function = function(args)
+				if typeof(args[1]) ~= 'Vector3' or typeof(args[2]) ~= 'Vector3' or args[3] and typeof(args[3]) ~= 'RaycastParams' then
+					return
+				end
+
+				if RayMethod.Value ~= 'All' and args[3] and args[3].FilterType ~= Enum.RaycastFilterType[RayMethod.Value] then
+					return
+				end
+
+				local entity, targetPart, origin = getTarget(args[1])
+				if not entity then
+					return
+				end
+
+				args[2] = CFrame.lookAt(origin, targetPart.Position).LookVector * args[2].Magnitude
+				if Wallbang.Enabled then
+					RaycastWhitelist.FilterDescendantsInstances = {targetPart}
+					args[3] = RaycastWhitelist
+				end
+			end
+		},
+		ScreenPointToRay = {
+			Hook = Instance.new('Camera').ScreenPointToRay,
+			Function = function(args)
+				if args[3] and type(args[3]) ~= 'number' then
+					return
+				end
+
+				local entity, targetPart, origin = getTarget(gameCamera.CFrame.Position)
+				if not entity then
+					return
+				end
+
+				local direction = CFrame.lookAt(origin, targetPart.Position)
+				if Projectile.Enabled then
+					local calc = prediction.SolveTrajectory(origin, ProjectileSpeed.Value, ProjectileGravity.Value, targetPart.Position, targetPart.Velocity, workspace.Gravity, entity.HipHeight, nil, ProjectileRaycast)
+					if not calc then
 						return
 					end
 
-					local entity, targetPart, origin = getTarget(args[1])
-					if not entity then
+					direction = CFrame.lookAt(origin, calc)
+				end
+
+				return {
+					Ray.new(origin + (args[3] and direction.LookVector * args[3] or Vector3.zero), direction.LookVector)
+				}
+			end
+		},
+		Ray = {
+			Hook = Ray.new,
+			Function = function(args)
+				if typeof(args[1]) ~= 'Vector3' or typeof(args[2]) ~= 'Vector3' then
+					return
+				end
+
+				local entity, targetPart, origin = getTarget(args[1])
+				if not entity then
+					return
+				end
+
+				if Projectile.Enabled then
+					local calc = prediction.SolveTrajectory(origin, ProjectileSpeed.Value, ProjectileGravity.Value, targetPart.Position, targetPart.Velocity, workspace.Gravity, entity.HipHeight, nil, ProjectileRaycast)
+					if not calc then
 						return
 					end
 
-					if Projectile.Enabled then
-						local calc = prediction.SolveTrajectory(origin, ProjectileSpeed.Value, ProjectileGravity.Value, targetPart.Position, targetPart.Velocity, workspace.Gravity, entity.HipHeight, nil, ProjectileRaycast)
-						if not calc then
-							return
-						end
-
-						args[2] = CFrame.lookAt(origin, calc).LookVector * args[2].Magnitude
-					else
-						args[2] = CFrame.lookAt(origin, targetPart.Position).LookVector * args[2].Magnitude
-					end
-				end,
-				NoNamecall = true
-			}
-		}
-
-		local function namecallHook(...)
-			if getnamecallmethod() ~= Method.Value then
-				return oldnamecall(...)
-			end
-
-			if checkcaller() then
-				return oldnamecall(...)
-			end
-
-			local caller = getcallingscript()
-			if typeof(caller) == 'Instance' and caller then
-				if table.find(IgnoredScripts.ListEnabled, tostring(caller)) then
-					return oldnamecall(...)
-				end
-			end
-
-			local self, args = ..., {select(2, ...)}
-			local data = hookmethod.Function(args)
-			if data then
-				return unpack(data)
-			end
-
-			return oldnamecall(self, unpack(args))
-		end
-
-		for _, method in {'FindPartOnRayWithWhitelist', 'FindPartOnRay'} do
-			Hooks[method] = table.clone(Hooks.FindPartOnRayWithIgnoreList)
-			Hooks[method].Hook = workspace[method]
-		end
-
-		Hooks.ViewportPointToRay = table.clone(Hooks.ScreenPointToRay)
-		Hooks.ViewportPointToRay.Hook = Instance.new('Camera').ViewportPointToRay
-
-		SilentAim = vape.Categories.Combat:CreateModule({
-			Name = 'SilentAim',
-			Function = function(callback)
-				if CircleObject then
-					CircleObject.Visible = callback and Mode.Value == 'Mouse'
-				end
-
-				if callback then
-					if Method.Value == 'TaskScheduler' then
-						local old
-						SilentAim:Clean(runService.PostSimulation:Connect(function()
-							local entity, targetPart = getTarget(gameCamera.CFrame.Position)
-							if entity then
-								old = gameCamera.CFrame
-								gameCamera.CFrame = CFrame.lookAt(gameCamera.CFrame.Position, targetPart.Position)
-							end
-						end))
-
-						local key = httpService:GenerateGUID(false)
-						runService:BindToRenderStep(key, SchedulerPriority.Value, function()
-							if old then
-								gameCamera.CFrame = old
-								old = nil
-							end
-						end)
-
-						SilentAim:Clean(function()
-							runService:UnbindFromRenderStep(key)
-						end)
-					else
-						hookmethod = Hooks[Method.Value]
-						didOth = OthHook.Enabled
-
-						if FunctionHook.Enabled or hookmethod.NoNamecall then
-							oldhook = (OthHook.Enabled and oth.hook or hookfunction)(hookmethod.Hook, function(...)
-								if checkcaller() then
-									return oldhook(...)
-								end
-
-								local caller = getcallingscript()
-								if typeof(caller) == 'Instance' and caller then
-									if table.find(IgnoredScripts.ListEnabled, tostring(caller)) then
-										return oldnamecall(...)
-									end
-								end
-
-								if hookmethod.NoNamecall then
-									local args = {...}
-									local data = hookmethod.Function(args)
-									if data then
-										return unpack(data)
-									end
-
-									return oldhook(unpack(args))
-								else
-									local self, args = ..., {select(2, ...)}
-									local data = hookmethod.Function(args)
-									if data then
-										return unpack(data)
-									end
-
-									return oldhook(self, unpack(args))
-								end
-							end)
-						end
-
-						if not hookmethod.NoNamecall then
-							oldnamecall = OthHook.Enabled and oth.hook(getrawmetatable(game).__namecall, namecallHook) or hookmetamethod(game, '__namecall', namecallHook)
-						end
-					end
+					args[2] = CFrame.lookAt(origin, calc).LookVector * args[2].Magnitude
 				else
-					if oldhook then
-						(didOth and oth.unhook or restorefunction)(hookmethod.Hook)
-						oldhook = nil
+					args[2] = CFrame.lookAt(origin, targetPart.Position).LookVector * args[2].Magnitude
+				end
+			end,
+			NoNamecall = true
+		}
+	}
+
+	local function namecallHook(...)
+		if getnamecallmethod() ~= Method.Value then
+			return oldnamecall(...)
+		end
+
+		if checkcaller() then
+			return oldnamecall(...)
+		end
+
+		local caller = getcallingscript()
+		if typeof(caller) == 'Instance' and caller then
+			if table.find(IgnoredScripts.ListEnabled, tostring(caller)) then
+				return oldnamecall(...)
+			end
+		end
+
+		local self, args = ..., {select(2, ...)}
+		local data = hookmethod.Function(args)
+		if data then
+			return unpack(data)
+		end
+
+		return oldnamecall(self, unpack(args))
+	end
+
+	for _, method in {'FindPartOnRayWithWhitelist', 'FindPartOnRay'} do
+		Hooks[method] = table.clone(Hooks.FindPartOnRayWithIgnoreList)
+		Hooks[method].Hook = workspace[method]
+	end
+
+	Hooks.ViewportPointToRay = table.clone(Hooks.ScreenPointToRay)
+	Hooks.ViewportPointToRay.Hook = Instance.new('Camera').ViewportPointToRay
+
+	SilentAim = vape.Categories.Combat:CreateModule({
+		Name = 'SilentAim',
+		Function = function(callback)
+			if CircleObject then
+				CircleObject.Visible = callback and Mode.Value == 'Mouse'
+			end
+
+			if callback then
+				if Method.Value == 'TaskScheduler' then
+					local old
+					SilentAim:Clean(runService.PostSimulation:Connect(function()
+						local entity, targetPart = getTarget(gameCamera.CFrame.Position)
+						if entity then
+							old = gameCamera.CFrame
+							gameCamera.CFrame = CFrame.lookAt(gameCamera.CFrame.Position, targetPart.Position)
+						end
+					end))
+
+					local key = httpService:GenerateGUID(false)
+					runService:BindToRenderStep(key, SchedulerPriority.Value, function()
+						if old then
+							gameCamera.CFrame = old
+							old = nil
+						end
+					end)
+
+					SilentAim:Clean(function()
+						runService:UnbindFromRenderStep(key)
+					end)
+				else
+					hookmethod = Hooks[Method.Value]
+					didOth = OthHook.Enabled
+
+					if FunctionHook.Enabled or hookmethod.NoNamecall then
+						oldhook = (OthHook.Enabled and oth.hook or hookfunction)(hookmethod.Hook, function(...)
+							if checkcaller() then
+								return oldhook(...)
+							end
+
+							local caller = getcallingscript()
+							if typeof(caller) == 'Instance' and caller then
+								if table.find(IgnoredScripts.ListEnabled, tostring(caller)) then
+									return oldnamecall(...)
+								end
+							end
+
+							if hookmethod.NoNamecall then
+								local args = {...}
+								local data = hookmethod.Function(args)
+								if data then
+									return unpack(data)
+								end
+
+								return oldhook(unpack(args))
+							else
+								local self, args = ..., {select(2, ...)}
+								local data = hookmethod.Function(args)
+								if data then
+									return unpack(data)
+								end
+
+								return oldhook(self, unpack(args))
+							end
+						end)
 					end
 
-					if oldnamecall then
-						(didOth and oth.unhook or restorefunction)(getrawmetatable(game).__namecall)
-						oldnamecall = nil
+					if not hookmethod.NoNamecall then
+						oldnamecall = OthHook.Enabled and oth.hook(getrawmetatable(game).__namecall, namecallHook) or hookmetamethod(game, '__namecall', namecallHook)
 					end
 				end
+			else
+				if oldhook then
+					(didOth and oth.unhook or restorefunction)(hookmethod.Hook)
+					oldhook = nil
+				end
 
-				repeat
-					if CircleObject then
-						CircleObject.Position = getMousePosition()
-					end
+				if oldnamecall then
+					(didOth and oth.unhook or restorefunction)(getrawmetatable(game).__namecall)
+					oldnamecall = nil
+				end
+			end
 
-					if AutoFire.Enabled then
-						local origin = AutoFireMode.Value == 'Camera' and gameCamera.CFrame or entitylib.isAlive and entitylib.character.RootPart.CFrame or CFrame.identity
-						local entity = entitylib['Entity'..Mode.Value]({
-							Range = Range.Value,
-							Wallcheck = Target.Walls.Enabled or nil,
-							Part = 'Head',
-							Origin = (origin * fireOffset).Position,
-							Players = Target.Players.Enabled,
-							NPCs = Target.NPCs.Enabled
-						})
+			repeat
+				if CircleObject then
+					CircleObject.Position = getMousePosition()
+				end
 
-						if mouse1click and (isrbxactive or iswindowactive)() then
-							if entity and canClick() then
-								if clickDelay < os.clock() then
-									if mouseClicked then
-										mouse1release()
-										clickDelay = os.clock() + AutoFireShootDelay.Value
-									else
-										mouse1press()
-									end
+				if AutoFire.Enabled then
+					local origin = AutoFireMode.Value == 'Camera' and gameCamera.CFrame or entitylib.isAlive and entitylib.character.RootPart.CFrame or CFrame.identity
+					local entity = entitylib['Entity'..Mode.Value]({
+						Range = Range.Value,
+						Wallcheck = Target.Walls.Enabled or nil,
+						Part = 'Head',
+						Origin = (origin * fireOffset).Position,
+						Players = Target.Players.Enabled,
+						NPCs = Target.NPCs.Enabled
+					})
 
-									mouseClicked = not mouseClicked
-								end
-							else
+					if mouse1click and (isrbxactive or iswindowactive)() then
+						if entity and canClick() then
+							if clickDelay < os.clock() then
 								if mouseClicked then
 									mouse1release()
+									clickDelay = os.clock() + AutoFireShootDelay.Value
+								else
+									mouse1press()
 								end
 
-								mouseClicked = false
+								mouseClicked = not mouseClicked
 							end
+						else
+							if mouseClicked then
+								mouse1release()
+							end
+
+							mouseClicked = false
 						end
 					end
-
-					task.wait()
-				until not SilentAim.Enabled
-			end,
-			ExtraText = function()
-				return Method.Value:gsub('FindPartOnRay', '')
-			end,
-			Tooltip = 'Silently adjusts your aim towards the enemy'
-		})
-		Target = SilentAim:CreateTargets({
-			Players = true
-		})
-		Mode = SilentAim:CreateDropdown({
-			Name = 'Mode',
-			List = {'Mouse', 'Position'},
-			Function = function(val)
-				if CircleObject then
-					CircleObject.Visible = SilentAim.Enabled and val == 'Mouse'
-				end
-			end,
-			Tooltip = 'Mouse - Checks for entities near the mouses position\nPosition - Checks for entities near the local character'
-		})
-		Method = SilentAim:CreateDropdown({
-			Name = 'Method',
-			List = {'FindPartOnRay', 'FindPartOnRayWithIgnoreList', 'FindPartOnRayWithWhitelist', 'ScreenPointToRay', 'ViewportPointToRay', 'Raycast', 'Ray', 'TaskScheduler'},
-			Function = function(val)
-				if SilentAim.Enabled then
-					SilentAim:Toggle()
-					SilentAim:Toggle()
 				end
 
-				RayMethod.Object.Visible = val == 'Raycast'
-				IgnoredScripts.Object.Visible = val ~= 'TaskScheduler'
-				SchedulerPriority.Object.Visible = val == 'TaskScheduler'
-			end,
-			Tooltip = 'FindPartOnRay* - Deprecated methods of raycasting used in old games\nRaycast - The modern raycast method\n*PointToRay - Method to generate a ray from a screen position\nRay - Used in old games'
-		})
-		RayMethod = SilentAim:CreateDropdown({
-			Name = 'Raycast Type',
-			List = {'All', 'Exclude', 'Include'},
-			Darker = true,
-			Visible = false
-		})
-		IgnoredScripts = SilentAim:CreateTextList({
-			Name = 'Ignored Scripts',
-			Default = {'CameraModule'}
-		})
-		Range = SilentAim:CreateSlider({
-			Name = 'Range',
-			Min = 1,
-			Max = 1000,
-			Default = 150,
-			Function = function(val)
-				if CircleObject then
-					CircleObject.Radius = val
-				end
-			end,
-			Suffix = function(val)
-				return val == 1 and 'stud' or 'studs'
+				task.wait()
+			until not SilentAim.Enabled
+		end,
+		ExtraText = function()
+			return Method.Value:gsub('FindPartOnRay', '')
+		end,
+		Tooltip = 'Silently adjusts your aim towards the enemy'
+	})
+	Target = SilentAim:CreateTargets({
+		Players = true
+	})
+	Mode = SilentAim:CreateDropdown({
+		Name = 'Mode',
+		List = {'Mouse', 'Position'},
+		Function = function(val)
+			if CircleObject then
+				CircleObject.Visible = SilentAim.Enabled and val == 'Mouse'
 			end
-		})
-		HitChance = SilentAim:CreateSlider({
-			Name = 'Hit Chance',
-			Min = 0,
-			Max = 100,
-			Default = 100,
-			Suffix = '%'
-		})
-		HeadshotChance = SilentAim:CreateSlider({
-			Name = 'Headshot Chance',
-			Min = 0,
-			Max = 100,
-			Default = 65,
-			Suffix = '%'
-		})
-		SchedulerPriority = SilentAim:CreateSlider({
-			Name = 'Scheduler Priority',
-			Min = -5,
-			Max = 5,
-			Default = 0,
-			Function = function()
-				if SilentAim.Enabled then
-					SilentAim:Toggle()
-					SilentAim:Toggle()
-				end
-			end,
-			Darker = true,
-			Visible = false,
-			Tooltip = 'Adjust the RenderStepped priority for TaskScheduler, only adjust this if you know what you are doing!'
-		})
-		AutoFire = SilentAim:CreateToggle({
-			Name = 'AutoFire',
-			Function = function(callback)
-				AutoFireShootDelay.Object.Visible = callback
-				AutoFireMode.Object.Visible = callback
-				AutoFirePosition.Object.Visible = callback
+		end,
+		Tooltip = 'Mouse - Checks for entities near the mouses position\nPosition - Checks for entities near the local character'
+	})
+	Method = SilentAim:CreateDropdown({
+		Name = 'Method',
+		List = {'FindPartOnRay', 'FindPartOnRayWithIgnoreList', 'FindPartOnRayWithWhitelist', 'ScreenPointToRay', 'ViewportPointToRay', 'Raycast', 'Ray', 'TaskScheduler'},
+		Function = function(val)
+			if SilentAim.Enabled then
+				SilentAim:Toggle()
+				SilentAim:Toggle()
 			end
-		})
-		AutoFireShootDelay = SilentAim:CreateSlider({
-			Name = 'Next Shot Delay',
-			Min = 0,
-			Max = 1,
-			Decimal = 100,
-			Visible = false,
-			Darker = true,
-			Suffix = function(val)
-				return val == 1 and 'second' or 'seconds'
+
+			RayMethod.Object.Visible = val == 'Raycast'
+			IgnoredScripts.Object.Visible = val ~= 'TaskScheduler'
+			SchedulerPriority.Object.Visible = val == 'TaskScheduler'
+		end,
+		Tooltip = 'FindPartOnRay* - Deprecated methods of raycasting used in old games\nRaycast - The modern raycast method\n*PointToRay - Method to generate a ray from a screen position\nRay - Used in old games'
+	})
+	RayMethod = SilentAim:CreateDropdown({
+		Name = 'Raycast Type',
+		List = {'All', 'Exclude', 'Include'},
+		Darker = true,
+		Visible = false
+	})
+	IgnoredScripts = SilentAim:CreateTextList({
+		Name = 'Ignored Scripts',
+		Default = {'CameraModule'}
+	})
+	Range = SilentAim:CreateSlider({
+		Name = 'Range',
+		Min = 1,
+		Max = 1000,
+		Default = 150,
+		Function = function(val)
+			if CircleObject then
+				CircleObject.Radius = val
 			end
-		})
-		AutoFireMode = SilentAim:CreateDropdown({
-			Name = 'Origin',
-			List = {'RootPart', 'Camera'},
-			Visible = false,
-			Darker = true,
-			Tooltip = 'Determines the position to check for before shooting'
-		})
-		AutoFirePosition = SilentAim:CreateTextBox({
-			Name = 'Offset',
-			Function = function()
-				local success, cf = pcall(function()
-					return CFrame.new(unpack(AutoFirePosition.Value:split(',')))
+		end,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end
+	})
+	HitChance = SilentAim:CreateSlider({
+		Name = 'Hit Chance',
+		Min = 0,
+		Max = 100,
+		Default = 100,
+		Suffix = '%'
+	})
+	HeadshotChance = SilentAim:CreateSlider({
+		Name = 'Headshot Chance',
+		Min = 0,
+		Max = 100,
+		Default = 65,
+		Suffix = '%'
+	})
+	SchedulerPriority = SilentAim:CreateSlider({
+		Name = 'Scheduler Priority',
+		Min = -5,
+		Max = 5,
+		Default = 0,
+		Function = function()
+			if SilentAim.Enabled then
+				SilentAim:Toggle()
+				SilentAim:Toggle()
+			end
+		end,
+		Darker = true,
+		Visible = false,
+		Tooltip = 'Adjust the RenderStepped priority for TaskScheduler, only adjust this if you know what you are doing!'
+	})
+	AutoFire = SilentAim:CreateToggle({
+		Name = 'AutoFire',
+		Function = function(callback)
+			AutoFireShootDelay.Object.Visible = callback
+			AutoFireMode.Object.Visible = callback
+			AutoFirePosition.Object.Visible = callback
+		end
+	})
+	AutoFireShootDelay = SilentAim:CreateSlider({
+		Name = 'Next Shot Delay',
+		Min = 0,
+		Max = 1,
+		Decimal = 100,
+		Visible = false,
+		Darker = true,
+		Suffix = function(val)
+			return val == 1 and 'second' or 'seconds'
+		end
+	})
+	AutoFireMode = SilentAim:CreateDropdown({
+		Name = 'Origin',
+		List = {'RootPart', 'Camera'},
+		Visible = false,
+		Darker = true,
+		Tooltip = 'Determines the position to check for before shooting'
+	})
+	AutoFirePosition = SilentAim:CreateTextBox({
+		Name = 'Offset',
+		Function = function()
+			local success, cf = pcall(function()
+				return CFrame.new(unpack(AutoFirePosition.Value:split(',')))
+			end)
+
+			if success then
+				fireOffset = cf
+			end
+		end,
+		Default = '0, 0, 0',
+		Visible = false,
+		Darker = true
+	})
+	Wallbang = SilentAim:CreateToggle({Name = 'Wallbang'})
+	FunctionHook = SilentAim:CreateToggle({
+		Name = 'Function hook',
+		Function = function()
+			if SilentAim.Enabled then
+				SilentAim:Toggle()
+				SilentAim:Toggle()
+			end
+		end,
+		Tooltip = 'Hook the function used for index calling (used on some games)'
+	})
+	OthHook = SilentAim:CreateToggle({
+		Name = 'Oth hook',
+		Function = function()
+			if SilentAim.Enabled then
+				SilentAim:Toggle()
+				SilentAim:Toggle()
+			end
+		end,
+		Tooltip = 'Hook the function using a less detected method (useful on some games)'
+	})
+	SilentAim:CreateToggle({
+		Name = 'Range Circle',
+		Function = function(callback)
+			if callback then
+				CircleObject = Drawing.new('Circle')
+				CircleObject.Filled = CircleFilled.Enabled
+				CircleObject.Color = Color3.fromHSV(CircleColor.Hue, CircleColor.Sat, CircleColor.Value)
+				CircleObject.Position = vape.gui.AbsoluteSize / 2
+				CircleObject.Radius = Range.Value
+				CircleObject.NumSides = 100
+				CircleObject.Transparency = 1 - CircleTransparency.Value
+				CircleObject.Visible = SilentAim.Enabled and Mode.Value == 'Mouse'
+			else
+				pcall(function()
+					CircleObject.Visible = false
+					CircleObject:Remove()
 				end)
-
-				if success then
-					fireOffset = cf
-				end
-			end,
-			Default = '0, 0, 0',
-			Visible = false,
-			Darker = true
-		})
-		Wallbang = SilentAim:CreateToggle({Name = 'Wallbang'})
-		FunctionHook = SilentAim:CreateToggle({
-			Name = 'Function hook',
-			Function = function()
-				if SilentAim.Enabled then
-					SilentAim:Toggle()
-					SilentAim:Toggle()
-				end
-			end,
-			Tooltip = 'Hook the function used for index calling (used on some games)'
-		})
-		OthHook = SilentAim:CreateToggle({
-			Name = 'Oth hook',
-			Function = function()
-				if SilentAim.Enabled then
-					SilentAim:Toggle()
-					SilentAim:Toggle()
-				end
-			end,
-			Tooltip = 'Hook the function using a less detected method (useful on some games)'
-		})
-		SilentAim:CreateToggle({
-			Name = 'Range Circle',
-			Function = function(callback)
-				if callback then
-					CircleObject = Drawing.new('Circle')
-					CircleObject.Filled = CircleFilled.Enabled
-					CircleObject.Color = Color3.fromHSV(CircleColor.Hue, CircleColor.Sat, CircleColor.Value)
-					CircleObject.Position = vape.gui.AbsoluteSize / 2
-					CircleObject.Radius = Range.Value
-					CircleObject.NumSides = 100
-					CircleObject.Transparency = 1 - CircleTransparency.Value
-					CircleObject.Visible = SilentAim.Enabled and Mode.Value == 'Mouse'
-				else
-					pcall(function()
-						CircleObject.Visible = false
-						CircleObject:Remove()
-					end)
-				end
-				CircleColor.Object.Visible = callback
-				CircleTransparency.Object.Visible = callback
-				CircleFilled.Object.Visible = callback
 			end
-		})
-		CircleColor = SilentAim:CreateColorSlider({
-			Name = 'Circle Color',
-			Function = function(hue, sat, val)
-				if CircleObject then
-					CircleObject.Color = Color3.fromHSV(hue, sat, val)
-				end
-			end,
-			Darker = true,
-			Visible = false
-		})
-		CircleTransparency = SilentAim:CreateSlider({
-			Name = 'Transparency',
-			Min = 0,
-			Max = 1,
-			Decimal = 10,
-			Default = 0.5,
-			Function = function(val)
-				if CircleObject then
-					CircleObject.Transparency = 1 - val
-				end
-			end,
-			Darker = true,
-			Visible = false
-		})
-		CircleFilled = SilentAim:CreateToggle({
-			Name = 'Circle Filled',
-			Function = function(callback)
-				if CircleObject then
-					CircleObject.Filled = callback
-				end
-			end,
-			Darker = true,
-			Visible = false
-		})
-		Projectile = SilentAim:CreateToggle({
-			Name = 'Projectile',
-			Function = function(callback)
-				ProjectileSpeed.Object.Visible = callback
-				ProjectileGravity.Object.Visible = callback
+			CircleColor.Object.Visible = callback
+			CircleTransparency.Object.Visible = callback
+			CircleFilled.Object.Visible = callback
+		end
+	})
+	CircleColor = SilentAim:CreateColorSlider({
+		Name = 'Circle Color',
+		Function = function(hue, sat, val)
+			if CircleObject then
+				CircleObject.Color = Color3.fromHSV(hue, sat, val)
 			end
-		})
-		ProjectileSpeed = SilentAim:CreateSlider({
-			Name = 'Speed',
-			Min = 1,
-			Max = 1000,
-			Default = 1000,
-			Darker = true,
-			Visible = false,
-			Suffix = function(val)
-				return val == 1 and 'stud' or 'studs'
+		end,
+		Darker = true,
+		Visible = false
+	})
+	CircleTransparency = SilentAim:CreateSlider({
+		Name = 'Transparency',
+		Min = 0,
+		Max = 1,
+		Decimal = 10,
+		Default = 0.5,
+		Function = function(val)
+			if CircleObject then
+				CircleObject.Transparency = 1 - val
 			end
-		})
-		ProjectileGravity = SilentAim:CreateSlider({
-			Name = 'Gravity',
-			Min = 0,
-			Max = 192.6,
-			Default = 192.6,
-			Darker = true,
-			Visible = false
-		})
-	end)
+		end,
+		Darker = true,
+		Visible = false
+	})
+	CircleFilled = SilentAim:CreateToggle({
+		Name = 'Circle Filled',
+		Function = function(callback)
+			if CircleObject then
+				CircleObject.Filled = callback
+			end
+		end,
+		Darker = true,
+		Visible = false
+	})
+	Projectile = SilentAim:CreateToggle({
+		Name = 'Projectile',
+		Function = function(callback)
+			ProjectileSpeed.Object.Visible = callback
+			ProjectileGravity.Object.Visible = callback
+		end
+	})
+	ProjectileSpeed = SilentAim:CreateSlider({
+		Name = 'Speed',
+		Min = 1,
+		Max = 1000,
+		Default = 1000,
+		Darker = true,
+		Visible = false,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end
+	})
+	ProjectileGravity = SilentAim:CreateSlider({
+		Name = 'Gravity',
+		Min = 0,
+		Max = 192.6,
+		Default = 192.6,
+		Darker = true,
+		Visible = false
+	})
 end)
 
 run(function()
@@ -2304,377 +2302,375 @@ run(function()
 
 end)
 
+local Fly
+local LongJump
 run(function()
-	local Fly
-	local LongJump
-	run(function()
-		local Options = {TPTiming = os.clock()}
-		local Mode
-		local FloatMode
-		local State
-		local MoveMethod
-		local UpKey
-		local DownKey
-		local VerticalValue
-		local BounceLength
-		local BounceDelay
-		local FloatTPGround
-		local FloatTPAir
-		local CustomProperties
-		local WallCheck
-		local PlatformStanding
-		local Platform, YLevel, OldYLevel
-		local w, s, a, d, up, down = 0, 0, 0, 0, 0, 0
-		local rayCheck = RaycastParams.new()
-		rayCheck.RespectCanCollide = true
-		Options.rayCheck = rayCheck
+	local Options = {TPTiming = os.clock()}
+	local Mode
+	local FloatMode
+	local State
+	local MoveMethod
+	local UpKey
+	local DownKey
+	local VerticalValue
+	local BounceLength
+	local BounceDelay
+	local FloatTPGround
+	local FloatTPAir
+	local CustomProperties
+	local WallCheck
+	local PlatformStanding
+	local Platform, YLevel, OldYLevel
+	local w, s, a, d, up, down = 0, 0, 0, 0, 0, 0
+	local rayCheck = RaycastParams.new()
+	rayCheck.RespectCanCollide = true
+	Options.rayCheck = rayCheck
 
-		local Functions
-		Functions = {
-			Velocity = function()
-				entitylib.character.RootPart.AssemblyLinearVelocity = (entitylib.character.RootPart.AssemblyLinearVelocity * Vector3.new(1, 0, 1)) + Vector3.new(0, 2.25 + ((up + down) * VerticalValue.Value), 0)
-			end,
-			Impulse = function(options, moveDirection)
-				local root = entitylib.character.RootPart
-				local diff = (Vector3.new(0, 2.25 + ((up + down) * VerticalValue.Value), 0) - root.AssemblyLinearVelocity) * Vector3.new(0, 1, 0)
+	local Functions
+	Functions = {
+		Velocity = function()
+			entitylib.character.RootPart.AssemblyLinearVelocity = (entitylib.character.RootPart.AssemblyLinearVelocity * Vector3.new(1, 0, 1)) + Vector3.new(0, 2.25 + ((up + down) * VerticalValue.Value), 0)
+		end,
+		Impulse = function(options, moveDirection)
+			local root = entitylib.character.RootPart
+			local diff = (Vector3.new(0, 2.25 + ((up + down) * VerticalValue.Value), 0) - root.AssemblyLinearVelocity) * Vector3.new(0, 1, 0)
 
-				if diff.Magnitude > 2 then
-					root:ApplyImpulse(diff * root.AssemblyMass)
-				end
-			end,
-			CFrame = function(dt)
-				local root = entitylib.character.RootPart
-				if not YLevel then
-					YLevel = root.Position.Y
-				end
+			if diff.Magnitude > 2 then
+				root:ApplyImpulse(diff * root.AssemblyMass)
+			end
+		end,
+		CFrame = function(dt)
+			local root = entitylib.character.RootPart
+			if not YLevel then
+				YLevel = root.Position.Y
+			end
 
-				YLevel = YLevel + ((up + down) * VerticalValue.Value * dt)
-				if WallCheck.Enabled then
-					rayCheck.FilterDescendantsInstances = {lplr.Character, gameCamera}
-					rayCheck.CollisionGroup = root.CollisionGroup
-					local ray = workspace:Raycast(root.Position, Vector3.new(0, YLevel - root.Position.Y, 0), rayCheck)
-					if ray then
-						YLevel = ray.Position.Y + entitylib.character.HipHeight
-					end
-				end
-
-				root.AssemblyLinearVelocity *= Vector3.new(1, 0, 1)
-				root.CFrame += Vector3.new(0, YLevel - root.Position.Y, 0)
-			end,
-			Bounce = function()
-				Functions.Velocity()
-				entitylib.character.RootPart.AssemblyLinearVelocity += Vector3.new(0, ((os.clock() % BounceDelay.Value) / BounceDelay.Value > 0.5 and 1 or -1) * BounceLength.Value, 0)
-			end,
-			Floor = function()
-				Platform.CFrame = down ~= 0 and CFrame.identity or entitylib.character.RootPart.CFrame + Vector3.new(0, -(entitylib.character.HipHeight + 0.5), 0)
-			end,
-			TP = function(dt)
-				Functions.CFrame(dt)
-
-				if os.clock() % (FloatTPAir.Value + FloatTPGround.Value) > FloatTPAir.Value then
-					OldYLevel = OldYLevel or YLevel
-					rayCheck.FilterDescendantsInstances = {lplr.Character, gameCamera}
-					rayCheck.CollisionGroup = entitylib.character.RootPart.CollisionGroup
-					local ray = workspace:Raycast(entitylib.character.RootPart.Position, Vector3.new(0, -1000, 0), rayCheck)
-					if ray then
-						YLevel = ray.Position.Y + entitylib.character.HipHeight
-					end
-				else
-					if OldYLevel then
-						YLevel = OldYLevel
-						OldYLevel = nil
-					end
-				end
-			end,
-			Jump = function(dt)
-				local root = entitylib.character.RootPart
-				if not YLevel then
-					YLevel = root.Position.Y
-				end
-
-				YLevel = YLevel + ((up + down) * VerticalValue.Value * dt)
-				if root.Position.Y < YLevel then
-					entitylib.character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+			YLevel = YLevel + ((up + down) * VerticalValue.Value * dt)
+			if WallCheck.Enabled then
+				rayCheck.FilterDescendantsInstances = {lplr.Character, gameCamera}
+				rayCheck.CollisionGroup = root.CollisionGroup
+				local ray = workspace:Raycast(root.Position, Vector3.new(0, YLevel - root.Position.Y, 0), rayCheck)
+				if ray then
+					YLevel = ray.Position.Y + entitylib.character.HipHeight
 				end
 			end
-		}
 
-		Fly = vape.Categories.Blatant:CreateModule({
-			Name = 'Fly',
-			Function = function(callback)
-				if Platform then
-					Platform.Parent = callback and gameCamera or nil
+			root.AssemblyLinearVelocity *= Vector3.new(1, 0, 1)
+			root.CFrame += Vector3.new(0, YLevel - root.Position.Y, 0)
+		end,
+		Bounce = function()
+			Functions.Velocity()
+			entitylib.character.RootPart.AssemblyLinearVelocity += Vector3.new(0, ((os.clock() % BounceDelay.Value) / BounceDelay.Value > 0.5 and 1 or -1) * BounceLength.Value, 0)
+		end,
+		Floor = function()
+			Platform.CFrame = down ~= 0 and CFrame.identity or entitylib.character.RootPart.CFrame + Vector3.new(0, -(entitylib.character.HipHeight + 0.5), 0)
+		end,
+		TP = function(dt)
+			Functions.CFrame(dt)
+
+			if os.clock() % (FloatTPAir.Value + FloatTPGround.Value) > FloatTPAir.Value then
+				OldYLevel = OldYLevel or YLevel
+				rayCheck.FilterDescendantsInstances = {lplr.Character, gameCamera}
+				rayCheck.CollisionGroup = entitylib.character.RootPart.CollisionGroup
+				local ray = workspace:Raycast(entitylib.character.RootPart.Position, Vector3.new(0, -1000, 0), rayCheck)
+				if ray then
+					YLevel = ray.Position.Y + entitylib.character.HipHeight
 				end
-
-				frictionTable.Fly = callback and CustomProperties.Enabled or nil
-				updateVelocity()
-				if callback then
-					Fly:Clean(runService.PreSimulation:Connect(function(dt)
-						if entitylib.isAlive then
-							if PlatformStanding.Enabled then
-								entitylib.character.Humanoid.PlatformStand = true
-								entitylib.character.RootPart.AssemblyAngularVelocity = Vector3.zero
-								entitylib.character.RootPart.CFrame = CFrame.lookAlong(entitylib.character.RootPart.CFrame.Position, gameCamera.CFrame.LookVector)
-							end
-
-							if State.Value ~= 'None' then
-								entitylib.character.Humanoid:ChangeState(Enum.HumanoidStateType[State.Value])
-							end
-
-							SpeedMethods[Mode.Value](Options, TargetStrafeVector or MoveMethod.Value == 'Direct' and calculateMoveVector(Vector3.new(a + d, 0, w + s)) or entitylib.character.Humanoid.MoveDirection, dt)
-							Functions[FloatMode.Value](dt)
-						else
-							YLevel = nil
-							OldYLevel = nil
-						end
-					end))
-
-					w, s, a, d = inputService:IsKeyDown(Enum.KeyCode.W) and -1 or 0, inputService:IsKeyDown(Enum.KeyCode.S) and 1 or 0, inputService:IsKeyDown(Enum.KeyCode.A) and -1 or 0, inputService:IsKeyDown(Enum.KeyCode.D) and 1 or 0
-					up, down = 0, 0
-					for _, v in {'InputBegan', 'InputEnded'} do
-						Fly:Clean(inputService[v]:Connect(function(input)
-							if not inputService:GetFocusedTextBox() then
-								if input.KeyCode == Enum.KeyCode.W then
-									w = v == 'InputBegan' and -1 or 0
-								elseif input.KeyCode == Enum.KeyCode.S then
-									s = v == 'InputBegan' and 1 or 0
-								elseif input.KeyCode == Enum.KeyCode.A then
-									a = v == 'InputBegan' and -1 or 0
-								elseif input.KeyCode == Enum.KeyCode.D then
-									d = v == 'InputBegan' and 1 or 0
-								end
-							end
-						end))
-					end
-
-					Fly:Clean(UpKey.Triggered:Connect(function(isDown)
-						up = isDown and 1 or 0
-					end))
-
-					Fly:Clean(DownKey.Triggered:Connect(function(isDown)
-						down = isDown and -1 or 0
-					end))
-
-					if inputService.TouchEnabled then
-						pcall(function()
-							local jumpButton = lplr.PlayerGui.TouchGui.TouchControlFrame.JumpButton
-							Fly:Clean(jumpButton:GetPropertyChangedSignal('ImageRectOffset'):Connect(function()
-								up = jumpButton.ImageRectOffset.X == 146 and 1 or 0
-							end))
-						end)
-					end
-				else
-					YLevel, OldYLevel = nil, nil
-					if entitylib.isAlive then
-						if PlatformStanding.Enabled then
-							entitylib.character.Humanoid.PlatformStand = false
-						end
-
-						if Options.WalkSpeed then
-							entitylib.character.Humanoid.WalkSpeed = Options.WalkSpeed
-						end
-					end
-
-					Options.WalkSpeed = nil
+			else
+				if OldYLevel then
+					YLevel = OldYLevel
+					OldYLevel = nil
 				end
-			end,
-			ExtraText = function()
-				return Mode.Value
-			end,
-			Tooltip = 'Makes you go zoom.'
-		})
-		Mode = Fly:CreateDropdown({
-			Name = 'Speed Mode',
-			List = SpeedMethodList,
-			Function = function(val)
-				WallCheck.Object.Visible = FloatMode.Value == 'CFrame' or FloatMode.Value == 'TP' or val == 'CFrame' or val == 'TP'
-				Options.TPFrequency.Object.Visible = val == 'TP'
-				Options.PulseLength.Object.Visible = val == 'Pulse'
-				Options.PulseDelay.Object.Visible = val == 'Pulse'
-				if Fly.Enabled then
-					Fly:Toggle()
-					Fly:Toggle()
-				end
-			end,
-			Tooltip = 'Velocity - Uses smooth physics based movement\nImpulse - Same as velocity while using forces instead\nCFrame - Directly adjusts the position of the root\nTP - Large teleports within intervals\nPulse - Controllable bursts of speed\nWalkSpeed - The classic mode of speed, usually detected on most games.'
-		})
-		FloatMode = Fly:CreateDropdown({
-			Name = 'Float Mode',
-			List = {'Velocity', 'Impulse', 'CFrame', 'Bounce', 'Floor', 'Jump', 'TP'},
-			Function = function(val)
-				WallCheck.Object.Visible = Mode.Value == 'CFrame' or Mode.Value == 'TP' or val == 'CFrame' or val == 'TP'
-				BounceLength.Object.Visible = val == 'Bounce'
-				BounceDelay.Object.Visible = val == 'Bounce'
-				VerticalValue.Object.Visible = val ~= 'Floor'
-				FloatTPGround.Object.Visible = val == 'TP'
-				FloatTPAir.Object.Visible = val == 'TP'
+			end
+		end,
+		Jump = function(dt)
+			local root = entitylib.character.RootPart
+			if not YLevel then
+				YLevel = root.Position.Y
+			end
 
-				if Platform then
-					Platform:Destroy()
-					Platform = nil
-				end
-
-				if val == 'Floor' then
-					Platform = Instance.new('Part')
-					Platform.CanQuery = false
-					Platform.Anchored = true
-					Platform.Size = Vector3.one
-					Platform.Transparency = 1
-					Platform.Parent = Fly.Enabled and gameCamera or nil
-				end
-			end,
-			Tooltip = 'Velocity - Uses smooth physics based movement\nImpulse - Same as velocity while using forces instead\nCFrame - Directly adjusts the position of the root\nTP - Teleports you to the ground within intervals\nFloor - Spawns a part under you\nJump - Presses space after going below a certain Y Level\nBounce - Vertical bouncing motion'
-		})
-		local states = {'None'}
-		for _, v in Enum.HumanoidStateType:GetEnumItems() do
-			if v.Name ~= 'Dead' and v.Name ~= 'None' then
-				table.insert(states, v.Name)
+			YLevel = YLevel + ((up + down) * VerticalValue.Value * dt)
+			if root.Position.Y < YLevel then
+				entitylib.character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 			end
 		end
-		State = Fly:CreateDropdown({
-			Name = 'Humanoid State',
-			List = states
-		})
-		MoveMethod = Fly:CreateDropdown({
-			Name = 'Move Mode',
-			List = {'MoveDirection', 'Direct'},
-			Tooltip = 'MoveDirection - Uses the games input vector for movement\nDirect - Directly calculate our own input vector'
-		})
-		UpKey = Fly:CreateBind({
-			Name = 'Up Key',
-			Default = {'Space'},
-			Hold = true,
-			Tooltip = 'Keybind to fly upwards'
-		})
-		DownKey = Fly:CreateBind({
-			Name = 'Down Key',
-			Default = {'LeftControl'},
-			Hold = true,
-			Tooltip = 'Keybind to fly downwards'
-		})
-		Options.Value = Fly:CreateSlider({
-			Name = 'Speed',
-			Min = 1,
-			Max = 150,
-			Default = 50,
-			Suffix = function(val)
-				return val == 1 and 'stud' or 'studs'
+	}
+
+	Fly = vape.Categories.Blatant:CreateModule({
+		Name = 'Fly',
+		Function = function(callback)
+			if Platform then
+				Platform.Parent = callback and gameCamera or nil
 			end
-		})
-		VerticalValue = Fly:CreateSlider({
-			Name = 'Vertical Speed',
-			Min = 1,
-			Max = 150,
-			Default = 50,
-			Suffix = function(val)
-				return val == 1 and 'stud' or 'studs'
-			end
-		})
-		Options.TPFrequency = Fly:CreateSlider({
-			Name = 'TP Frequency',
-			Min = 0,
-			Max = 1,
-			Decimal = 100,
-			Darker = true,
-			Visible = false,
-			Suffix = function(val)
-				return val == 1 and 'second' or 'seconds'
-			end
-		})
-		Options.PulseLength = Fly:CreateSlider({
-			Name = 'Pulse Length',
-			Min = 0,
-			Max = 1,
-			Decimal = 100,
-			Darker = true,
-			Visible = false,
-			Suffix = function(val)
-				return val == 1 and 'second' or 'seconds'
-			end
-		})
-		Options.PulseDelay = Fly:CreateSlider({
-			Name = 'Pulse Delay',
-			Min = 0,
-			Max = 1,
-			Decimal = 100,
-			Darker = true,
-			Visible = false,
-			Suffix = function(val)
-				return val == 1 and 'second' or 'seconds'
-			end
-		})
-		BounceLength = Fly:CreateSlider({
-			Name = 'Bounce Length',
-			Min = 0,
-			Max = 30,
-			Darker = true,
-			Visible = false,
-			Suffix = function(val)
-				return val == 1 and 'stud' or 'studs'
-			end
-		})
-		BounceDelay = Fly:CreateSlider({
-			Name = 'Bounce Delay',
-			Min = 0,
-			Max = 1,
-			Decimal = 100,
-			Darker = true,
-			Visible = false,
-			Suffix = function(val)
-				return val == 1 and 'second' or 'seconds'
-			end
-		})
-		FloatTPGround = Fly:CreateSlider({
-			Name = 'Ground',
-			Min = 0,
-			Max = 1,
-			Decimal = 10,
-			Default = 0.1,
-			Darker = true,
-			Visible = false,
-			Suffix = function(val)
-				return val == 1 and 'second' or 'seconds'
-			end
-		})
-		FloatTPAir = Fly:CreateSlider({
-			Name = 'Air',
-			Min = 0,
-			Max = 5,
-			Decimal = 10,
-			Default = 2,
-			Darker = true,
-			Visible = false,
-			Suffix = function(val)
-				return val == 1 and 'second' or 'seconds'
-			end
-		})
-		WallCheck = Fly:CreateToggle({
-			Name = 'Wall Check',
-			Default = true,
-			Darker = true,
-			Visible = false
-		})
-		Options.WallCheck = WallCheck
-		PlatformStanding = Fly:CreateToggle({
-			Name = 'PlatformStand',
-			Function = function(callback)
-				if Fly.Enabled then
-					entitylib.character.Humanoid.PlatformStand = callback
+
+			frictionTable.Fly = callback and CustomProperties.Enabled or nil
+			updateVelocity()
+			if callback then
+				Fly:Clean(runService.PreSimulation:Connect(function(dt)
+					if entitylib.isAlive then
+						if PlatformStanding.Enabled then
+							entitylib.character.Humanoid.PlatformStand = true
+							entitylib.character.RootPart.AssemblyAngularVelocity = Vector3.zero
+							entitylib.character.RootPart.CFrame = CFrame.lookAlong(entitylib.character.RootPart.CFrame.Position, gameCamera.CFrame.LookVector)
+						end
+
+						if State.Value ~= 'None' then
+							entitylib.character.Humanoid:ChangeState(Enum.HumanoidStateType[State.Value])
+						end
+
+						SpeedMethods[Mode.Value](Options, TargetStrafeVector or MoveMethod.Value == 'Direct' and calculateMoveVector(Vector3.new(a + d, 0, w + s)) or entitylib.character.Humanoid.MoveDirection, dt)
+						Functions[FloatMode.Value](dt)
+					else
+						YLevel = nil
+						OldYLevel = nil
+					end
+				end))
+
+				w, s, a, d = inputService:IsKeyDown(Enum.KeyCode.W) and -1 or 0, inputService:IsKeyDown(Enum.KeyCode.S) and 1 or 0, inputService:IsKeyDown(Enum.KeyCode.A) and -1 or 0, inputService:IsKeyDown(Enum.KeyCode.D) and 1 or 0
+				up, down = 0, 0
+				for _, v in {'InputBegan', 'InputEnded'} do
+					Fly:Clean(inputService[v]:Connect(function(input)
+						if not inputService:GetFocusedTextBox() then
+							if input.KeyCode == Enum.KeyCode.W then
+								w = v == 'InputBegan' and -1 or 0
+							elseif input.KeyCode == Enum.KeyCode.S then
+								s = v == 'InputBegan' and 1 or 0
+							elseif input.KeyCode == Enum.KeyCode.A then
+								a = v == 'InputBegan' and -1 or 0
+							elseif input.KeyCode == Enum.KeyCode.D then
+								d = v == 'InputBegan' and 1 or 0
+							end
+						end
+					end))
 				end
-			end,
-			Tooltip = 'Forces the character to look infront of the camera'
-		})
-		CustomProperties = Fly:CreateToggle({
-			Name = 'Custom Properties',
-			Function = function()
-				if Fly.Enabled then
-					Fly:Toggle()
-					Fly:Toggle()
+
+				Fly:Clean(UpKey.Triggered:Connect(function(isDown)
+					up = isDown and 1 or 0
+				end))
+
+				Fly:Clean(DownKey.Triggered:Connect(function(isDown)
+					down = isDown and -1 or 0
+				end))
+
+				if inputService.TouchEnabled then
+					pcall(function()
+						local jumpButton = lplr.PlayerGui.TouchGui.TouchControlFrame.JumpButton
+						Fly:Clean(jumpButton:GetPropertyChangedSignal('ImageRectOffset'):Connect(function()
+							up = jumpButton.ImageRectOffset.X == 146 and 1 or 0
+						end))
+					end)
 				end
-			end,
-			Default = true
-		})
-	end)
+			else
+				YLevel, OldYLevel = nil, nil
+				if entitylib.isAlive then
+					if PlatformStanding.Enabled then
+						entitylib.character.Humanoid.PlatformStand = false
+					end
+
+					if Options.WalkSpeed then
+						entitylib.character.Humanoid.WalkSpeed = Options.WalkSpeed
+					end
+				end
+
+				Options.WalkSpeed = nil
+			end
+		end,
+		ExtraText = function()
+			return Mode.Value
+		end,
+		Tooltip = 'Makes you go zoom.'
+	})
+	Mode = Fly:CreateDropdown({
+		Name = 'Speed Mode',
+		List = SpeedMethodList,
+		Function = function(val)
+			WallCheck.Object.Visible = FloatMode.Value == 'CFrame' or FloatMode.Value == 'TP' or val == 'CFrame' or val == 'TP'
+			Options.TPFrequency.Object.Visible = val == 'TP'
+			Options.PulseLength.Object.Visible = val == 'Pulse'
+			Options.PulseDelay.Object.Visible = val == 'Pulse'
+			if Fly.Enabled then
+				Fly:Toggle()
+				Fly:Toggle()
+			end
+		end,
+		Tooltip = 'Velocity - Uses smooth physics based movement\nImpulse - Same as velocity while using forces instead\nCFrame - Directly adjusts the position of the root\nTP - Large teleports within intervals\nPulse - Controllable bursts of speed\nWalkSpeed - The classic mode of speed, usually detected on most games.'
+	})
+	FloatMode = Fly:CreateDropdown({
+		Name = 'Float Mode',
+		List = {'Velocity', 'Impulse', 'CFrame', 'Bounce', 'Floor', 'Jump', 'TP'},
+		Function = function(val)
+			WallCheck.Object.Visible = Mode.Value == 'CFrame' or Mode.Value == 'TP' or val == 'CFrame' or val == 'TP'
+			BounceLength.Object.Visible = val == 'Bounce'
+			BounceDelay.Object.Visible = val == 'Bounce'
+			VerticalValue.Object.Visible = val ~= 'Floor'
+			FloatTPGround.Object.Visible = val == 'TP'
+			FloatTPAir.Object.Visible = val == 'TP'
+
+			if Platform then
+				Platform:Destroy()
+				Platform = nil
+			end
+
+			if val == 'Floor' then
+				Platform = Instance.new('Part')
+				Platform.CanQuery = false
+				Platform.Anchored = true
+				Platform.Size = Vector3.one
+				Platform.Transparency = 1
+				Platform.Parent = Fly.Enabled and gameCamera or nil
+			end
+		end,
+		Tooltip = 'Velocity - Uses smooth physics based movement\nImpulse - Same as velocity while using forces instead\nCFrame - Directly adjusts the position of the root\nTP - Teleports you to the ground within intervals\nFloor - Spawns a part under you\nJump - Presses space after going below a certain Y Level\nBounce - Vertical bouncing motion'
+	})
+	local states = {'None'}
+	for _, v in Enum.HumanoidStateType:GetEnumItems() do
+		if v.Name ~= 'Dead' and v.Name ~= 'None' then
+			table.insert(states, v.Name)
+		end
+	end
+	State = Fly:CreateDropdown({
+		Name = 'Humanoid State',
+		List = states
+	})
+	MoveMethod = Fly:CreateDropdown({
+		Name = 'Move Mode',
+		List = {'MoveDirection', 'Direct'},
+		Tooltip = 'MoveDirection - Uses the games input vector for movement\nDirect - Directly calculate our own input vector'
+	})
+	UpKey = Fly:CreateBind({
+		Name = 'Up Key',
+		Default = {'Space'},
+		Hold = true,
+		Tooltip = 'Keybind to fly upwards'
+	})
+	DownKey = Fly:CreateBind({
+		Name = 'Down Key',
+		Default = {'LeftControl'},
+		Hold = true,
+		Tooltip = 'Keybind to fly downwards'
+	})
+	Options.Value = Fly:CreateSlider({
+		Name = 'Speed',
+		Min = 1,
+		Max = 150,
+		Default = 50,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end
+	})
+	VerticalValue = Fly:CreateSlider({
+		Name = 'Vertical Speed',
+		Min = 1,
+		Max = 150,
+		Default = 50,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end
+	})
+	Options.TPFrequency = Fly:CreateSlider({
+		Name = 'TP Frequency',
+		Min = 0,
+		Max = 1,
+		Decimal = 100,
+		Darker = true,
+		Visible = false,
+		Suffix = function(val)
+			return val == 1 and 'second' or 'seconds'
+		end
+	})
+	Options.PulseLength = Fly:CreateSlider({
+		Name = 'Pulse Length',
+		Min = 0,
+		Max = 1,
+		Decimal = 100,
+		Darker = true,
+		Visible = false,
+		Suffix = function(val)
+			return val == 1 and 'second' or 'seconds'
+		end
+	})
+	Options.PulseDelay = Fly:CreateSlider({
+		Name = 'Pulse Delay',
+		Min = 0,
+		Max = 1,
+		Decimal = 100,
+		Darker = true,
+		Visible = false,
+		Suffix = function(val)
+			return val == 1 and 'second' or 'seconds'
+		end
+	})
+	BounceLength = Fly:CreateSlider({
+		Name = 'Bounce Length',
+		Min = 0,
+		Max = 30,
+		Darker = true,
+		Visible = false,
+		Suffix = function(val)
+			return val == 1 and 'stud' or 'studs'
+		end
+	})
+	BounceDelay = Fly:CreateSlider({
+		Name = 'Bounce Delay',
+		Min = 0,
+		Max = 1,
+		Decimal = 100,
+		Darker = true,
+		Visible = false,
+		Suffix = function(val)
+			return val == 1 and 'second' or 'seconds'
+		end
+	})
+	FloatTPGround = Fly:CreateSlider({
+		Name = 'Ground',
+		Min = 0,
+		Max = 1,
+		Decimal = 10,
+		Default = 0.1,
+		Darker = true,
+		Visible = false,
+		Suffix = function(val)
+			return val == 1 and 'second' or 'seconds'
+		end
+	})
+	FloatTPAir = Fly:CreateSlider({
+		Name = 'Air',
+		Min = 0,
+		Max = 5,
+		Decimal = 10,
+		Default = 2,
+		Darker = true,
+		Visible = false,
+		Suffix = function(val)
+			return val == 1 and 'second' or 'seconds'
+		end
+	})
+	WallCheck = Fly:CreateToggle({
+		Name = 'Wall Check',
+		Default = true,
+		Darker = true,
+		Visible = false
+	})
+	Options.WallCheck = WallCheck
+	PlatformStanding = Fly:CreateToggle({
+		Name = 'PlatformStand',
+		Function = function(callback)
+			if Fly.Enabled then
+				entitylib.character.Humanoid.PlatformStand = callback
+			end
+		end,
+		Tooltip = 'Forces the character to look infront of the camera'
+	})
+	CustomProperties = Fly:CreateToggle({
+		Name = 'Custom Properties',
+		Function = function()
+			if Fly.Enabled then
+				Fly:Toggle()
+				Fly:Toggle()
+			end
+		end,
+		Default = true
+	})
 end)
 
 run(function()
@@ -7634,29 +7630,37 @@ run(function()
 		RightFoot = true
 	}
 
+	-- the boxes belong to `Spawn fake` alone: they mark where the server last saw
+	-- us, so they have to appear before Blink chokes anything and stay up after it
+	-- is turned off, while the choke itself only runs with Blink on
 	local function updateBoxes()
-		if Blink.Enabled and Fake.Enabled and entitylib.isAlive then
-			for _, part in entitylib.character.Character:GetChildren() do
-				if part:IsA('BasePart') and whitelist[part.Name] then
-					if not boxes[part.Name] then
-						local box = Instance.new(part.Name == 'Head' and 'SphereHandleAdornment' or 'BoxHandleAdornment')
-						if part.Name == 'Head' then
-							box.Radius = 0.75
-						else
-							box.Size = part.Size
-						end
+		if not (Fake.Enabled and entitylib.isAlive) then
+			Folder:ClearAllChildren()
+			table.clear(boxes)
+			return
+		end
 
-						box.AlwaysOnTop = true
-						box.Adornee = workspace
-						box.ZIndex = 10
-						box.Transparency = 0.5
-						box.Parent = Folder
-						boxes[part.Name] = box
+		local character = entitylib.character.Character
+		for _, part in character:GetChildren() do
+			if part:IsA('BasePart') and whitelist[part.Name] then
+				local box = boxes[part.Name]
+				if not box then
+					box = Instance.new(part.Name == 'Head' and 'SphereHandleAdornment' or 'BoxHandleAdornment')
+					if part.Name == 'Head' then
+						box.Radius = 0.75
+					else
+						box.Size = part.Size
 					end
 
-					local box = boxes[part.Name]
-					box.CFrame = workspace:GetPivot():ToObjectSpace(part.CFrame)
+					box.AlwaysOnTop = true
+					box.Adornee = workspace
+					box.ZIndex = 10
+					box.Transparency = 0.5
+					box.Parent = Folder
+					boxes[part.Name] = box
 				end
+
+				box.CFrame = part.CFrame
 			end
 		end
 	end
@@ -7696,9 +7700,6 @@ run(function()
 					setfflag('DataSenderRate', '60')
 				end
 
-				Folder:ClearAllChildren()
-				table.clear(boxes)
-
 				oldphys, oldsend = nil, nil
 			end
 		end,
@@ -7711,7 +7712,15 @@ run(function()
 	})
 	Fake = Blink:CreateToggle({
 		Name = 'Spawn fake',
-		Function = updateBoxes,
+		Function = function(callback)
+			updateBoxes()
+
+			-- a respawn swaps entitylib.character, so the boxes have to be rebuilt
+			-- against the new rig; the connection only lives while the toggle is on
+			if callback then
+				Fake:Clean(entitylib.Events.LocalAdded:Connect(updateBoxes))
+			end
+		end,
 		Tooltip = 'Spawns chams from where you started/are on the servers side.'
 	})
 	AutoSend = Blink:CreateToggle({
